@@ -616,7 +616,6 @@ private:
             "  a                Toggle animations", 
             "  T                Toggle timer",
             "  r                Refresh/redraw",
-            "  c                Reload character config",
             "",
             "Other:",
             "  h                Show this help",

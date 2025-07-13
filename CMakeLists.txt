@@ -63,22 +63,22 @@ elseif(MSVC)
 endif()
 
 # Create executable
-add_executable(slides slides.cpp)
+add_executable(mdslides main.cpp)
 
 # Link libraries
-target_link_libraries(slides ${CURSES_LIBRARIES})
+target_link_libraries(mdslides ${CURSES_LIBRARIES})
 if(CURSES_INCLUDE_DIRS)
-    target_include_directories(slides PRIVATE ${CURSES_INCLUDE_DIRS})
+    target_include_directories(mdslides PRIVATE ${CURSES_INCLUDE_DIRS})
 endif()
 
 # Add Unicode support flag if available
 if(UNICODE_SUPPORT)
-    target_compile_definitions(slides PRIVATE UNICODE_SUPPORT=1)
+    target_compile_definitions(mdslides PRIVATE UNICODE_SUPPORT=1)
 endif()
 
 # Installation
-install(TARGETS slides RUNTIME DESTINATION bin)
-install(FILES README.md DESTINATION share/doc/slides)
+install(TARGETS mdslides RUNTIME DESTINATION bin)
+install(FILES README.md DESTINATION share/doc/mdslides)
 
 # Package configuration
 set(CPACK_PACKAGE_NAME "MarkdownSlidePresenter")

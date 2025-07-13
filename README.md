@@ -38,8 +38,8 @@ sudo apt update
 sudo apt install -y cmake build-essential libncurses-dev
 
 # Clone and build
-git clone <repository-url>
-cd markdown-slide-presenter
+git clone git@github.com:mkampl/mdslides.git
+cd mdslides
 mkdir build && cd build
 cmake ..
 make
@@ -171,14 +171,12 @@ The current mode (UTF-8 or ASCII) is displayed in the header for reference.
 ### Shell Command Execution
 Use special code blocks to execute shell commands:
 
-```markdown
-### System Information
 ```$uname -a
 ```
 
 ```$df -h
 ```
-```
+
 
 Commands are executed when you press Enter on the slide.
 
@@ -224,7 +222,7 @@ sudo apt install libncurses-dev
 ### Project Structure
 ```
 markdown-slide-presenter/
-├── slides.cpp           # Main source code
+├── main.cpp           # Main source code
 ├── CMakeLists.txt       # Build configuration
 ├── README.md            # Documentation
 ```
@@ -251,4 +249,4 @@ Contributions are welcome! Please feel free to submit pull requests or open issu
 
 ## License
 
-This project is open source. See the source code for details.
+This project is open source. See the LICENSE for details.
