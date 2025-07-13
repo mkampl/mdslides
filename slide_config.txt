@@ -1,0 +1,68 @@
+# Slide Presenter Character Replacement Configuration
+# Format: "search" -> "replacement"
+# Lines starting with # are comments
+
+# German Umlauts
+ä -> ae
+ö -> oe
+ü -> ue
+Ä -> Ae
+Ö -> Oe
+Ü -> Ue
+ß -> ss
+
+# Common Symbols
+✅ -> [X]
+❌ -> [ ]
+• -> *
+→ -> ->
+← -> <-
+↑ -> ^
+↓ -> v
+
+# Emojis - Time & System
+⏰ -> [TIME]
+📁 -> [FILES]
+💾 -> [DISK]
+🔍 -> [SEARCH]
+🌐 -> [NET]
+📊 -> [CHART]
+🛠️ -> [TOOLS]
+📦 -> [PKG]
+🔧 -> [CONFIG]
+📈 -> [PERF]
+🐳 -> [DOCKER]
+📝 -> [LOG]
+🎯 -> [TARGET]
+🏁 -> [FINISH]
+📚 -> [CODE]
+🚀 -> [ROCKET]
+
+# Additional Emojis
+💻 -> [PC]
+⚡ -> [FAST]
+🔒 -> [SECURE]
+🎉 -> [PARTY]
+👍 -> [THUMBS_UP]
+❗ -> [!]
+⚠️ -> [WARNING]
+📄 -> [DOC]
+🔄 -> [REFRESH]
+⭐ -> [STAR]
+
+# French characters (example)
+é -> e
+è -> e
+ç -> c
+à -> a
+
+# Spanish characters (example)
+ñ -> n
+í -> i
+ó -> o
+
+# Custom replacements (add your own here)
+# Example:
+# 🤖 -> [BOT]
+# 🌟 -> [STAR]
+# 💡 -> [IDEA]
