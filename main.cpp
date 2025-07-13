@@ -311,8 +311,6 @@ private:
     void setup_theme() {
         const auto& theme = themes[static_cast<int>(current_theme)];
         
-        bkgd(' ' | COLOR_PAIR(0));
-        
         init_pair(1, theme.title_color, theme.bg_color);
         init_pair(2, theme.subtitle_color, theme.bg_color);
         init_pair(3, theme.text_color, theme.bg_color);
@@ -323,6 +321,11 @@ private:
         init_pair(8, COLOR_YELLOW, theme.bg_color);
         init_pair(9, COLOR_RED, theme.bg_color);
         init_pair(0, theme.text_color, theme.bg_color);
+
+        refresh();
+        // Set window background
+        wbkgd(stdscr, ' ' | COLOR_PAIR(9));
+        refresh();
     }
     
     void render_element_animated(const SlideElement& element) {
@@ -345,13 +348,31 @@ private:
             case AnimationType::SLIDE_IN: {
                 attron(attrs);
                 int start_x = element.x + element.content.length() + 10;
-                for (int x = start_x; x >= element.x; x -= 3) {
-                    mvprintw(element.y, 0, "%*s", COLS, "");
+                for (int x = start_x; x >= element.x; x -= 3)
+                {
+                    // Clear line with background color
+                    attron(COLOR_PAIR(0));
+                    for (int col = 0; col < COLS; ++col)
+                    {
+                        mvaddch(element.y, col, ' ');
+                    }
+                    attroff(COLOR_PAIR(0));
+
+                    attron(attrs);
                     safe_mvprintw(element.y, std::max(x, element.x), element.content);
+                    attroff(attrs);
                     refresh();
                     std::this_thread::sleep_for(std::chrono::milliseconds(30));
                 }
-                mvprintw(element.y, 0, "%*s", COLS, "");
+                // Final clear and print
+                attron(COLOR_PAIR(0));
+                for (int col = 0; col < COLS; ++col)
+                {
+                    mvaddch(element.y, col, ' ');
+                }
+                attroff(COLOR_PAIR(0));
+
+                attron(attrs);
                 safe_mvprintw(element.y, element.x, element.content);
                 attroff(attrs);
                 break;
@@ -384,7 +405,7 @@ private:
     }
     
     void render_slide_animated() {
-        clear();
+        clear_with_background();
         draw_header();
         draw_footer();
         refresh();
@@ -408,7 +429,7 @@ private:
     }
     
     void render_slide_instant() {
-        clear();
+        clear_with_background();
         draw_header();
         draw_footer();
         
@@ -490,12 +511,18 @@ private:
     void update_shell_output_display(const SlideElement& shell_element) {
         int output_y = shell_element.y + 1;
         int lines_to_show = std::min((int)shell_element.shell_output_lines.size(), shell_element.max_output_lines);
-        
-        // Clear old output
-        for (int i = 0; i < 10; ++i) {
-            mvprintw(output_y + i, 0, "%*s", COLS, "");
+
+        // Clear old output WITH background color
+        attron(COLOR_PAIR(0));
+        for (int i = 0; i < 10; ++i)
+        {
+            for (int x = 0; x < COLS; ++x)
+            {
+                mvaddch(output_y + i, x, ' ');
+            }
         }
-        
+        attroff(COLOR_PAIR(0));
+
         // Display output lines
         for (int i = 0; i < lines_to_show; ++i) {
             int line_idx = shell_element.output_scroll_offset + i;
@@ -597,7 +624,7 @@ private:
     }
     
     void show_help() {
-        clear();
+        clear_with_background();
         
         const char* help_text[] = {
             "MARKDOWN SLIDE PRESENTER - HELP",
@@ -648,9 +675,25 @@ private:
         getch();
         render_slide_instant();
     }
+
+    void clear_with_background() {
+                
+        // Also explicitly fill any remaining areas
+        attron(COLOR_PAIR(0));
+        std::string line(COLS, ' ');
+        for (int y = 0; y < LINES; ++y) {
+            for (int x = 0; x < COLS; ++x) {
+                mvprintw(y, 0, "%s", line.c_str());
+            }
+        }
+        attroff(COLOR_PAIR(0));
+        move(0, 0);
+        refresh();
+    }
+    
     
     void goto_slide() {
-        clear();
+        clear_with_background();
         attron(COLOR_PAIR(2) | A_BOLD);
         mvprintw(LINES/2, 2, "Go to slide (1-%d): ", (int)slides.size());
         attroff(COLOR_PAIR(2) | A_BOLD);
@@ -709,7 +752,7 @@ public:
         
         if (has_colors()) {
             start_color();
-            use_default_colors();
+            //use_default_colors();
         }
         
         setup_theme();
