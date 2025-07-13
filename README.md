@@ -8,6 +8,7 @@ A terminal-based presentation tool that renders markdown files as interactive sl
 
 ### Core Functionality
 - Markdown parsing and rendering
+- Unicode character support (UTF-8) with ASCII fallback
 - Multiple themes (Dark, Light, Matrix, Retro)
 - Slide animations (Fade-in, Slide-in, Typewriter)
 - Navigation controls
@@ -28,13 +29,13 @@ A terminal-based presentation tool that renders markdown files as interactive sl
 ### Prerequisites
 - CMake 3.15 or higher
 - C++17 compatible compiler
-- ncurses library (platform-specific installation below)
+- ncurses library
 
 ### Linux (Ubuntu/Debian)
 ```bash
 # Install dependencies
 sudo apt update
-sudo apt install -y cmake build-essential libncurses-dev libncursesw5-dev pkg-config
+sudo apt install -y cmake build-essential libncurses-dev
 
 # Clone and build
 git clone <repository-url>
@@ -47,75 +48,13 @@ make
 sudo make install
 ```
 
-### Linux (CentOS/RHEL/Fedora)
-```bash
-# For CentOS/RHEL 8+
-sudo dnf install -y cmake gcc-c++ ncurses-devel pkgconfig
-
-# For older CentOS/RHEL
-sudo yum install -y cmake3 gcc-c++ ncurses-devel pkgconfig
-
-# For Fedora
-sudo dnf install -y cmake gcc-c++ ncurses-devel pkgconfig
-
-# Build
-mkdir build && cd build
-cmake ..
-make
-```
-
-### macOS
-```bash
-# Install Xcode command line tools
-xcode-select --install
-
-# Install Homebrew if not already installed
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-# Install dependencies
-brew install cmake ncurses pkg-config
-
-# Build
-mkdir build && cd build
-cmake ..
-make
-```
-
-### Windows (MinGW/MSYS2)
-```bash
-# Install MSYS2 from https://www.msys2.org/
-# In MSYS2 terminal:
-pacman -S mingw-w64-x86_64-cmake mingw-w64-x86_64-gcc mingw-w64-x86_64-ncurses
-
-# Build
-mkdir build && cd build
-cmake .. -G "MinGW Makefiles"
-mingw32-make
-```
-
-### Windows (Visual Studio)
-```bash
-# Install vcpkg
-git clone https://github.com/Microsoft/vcpkg.git
-cd vcpkg
-./bootstrap-vcpkg.bat
-
-# Install ncurses alternative (PDCurses)
-./vcpkg install pdcurses:x64-windows
-
-# Build with CMake
-mkdir build && cd build
-cmake .. -DCMAKE_TOOLCHAIN_FILE=path/to/vcpkg/scripts/buildsystems/vcpkg.cmake
-cmake --build .
-```
-
 ---
 
 ## Quick Start
 
 ### Building from Source
 ```bash
-# Universal build steps for Unix-like systems
+# Universal build steps
 mkdir build && cd build
 cmake ..
 make
@@ -123,9 +62,6 @@ make
 # Test the build
 ./slides ../README.md
 ```
-
-### Pre-built Binaries
-Check the releases page for pre-built binaries for your platform.
 
 ---
 
@@ -175,7 +111,7 @@ int main() {
 - Left Arrow / Backspace / 'h' - Previous slide
 - 'g' - Go to specific slide number
 - Home / '0' - First slide
-- End / ' - Last slide
+- End / '$' - Last slide
 
 ### Shell Commands
 - Enter - Execute shell commands on current slide
@@ -188,37 +124,45 @@ int main() {
 - 'r' - Refresh/redraw screen
 
 ### Other Controls
-- 'c' - Reload character configuration
 - 'h' or '?' - Show help screen
 - 'q' or Escape - Quit application
 
 ---
 
-## Configuration
+## Character Support
 
-### Character Replacement
-Create a `slide_config.txt` file for custom character replacements:
+The application automatically detects Unicode (UTF-8) support in your terminal:
 
-```
-# Character replacement configuration
-# Format: "search" -> "replacement"
+### Unicode Mode (UTF-8)
+- Native display of Unicode characters
+- Full international character support
+- Special symbols and characters displayed as intended
 
-# German Umlauts
-ä -> ae
-ö -> oe
-ü -> ue
+### ASCII Fallback Mode
+- Automatic character replacement when Unicode is not supported
+- Built-in replacement map for common characters
+- Optional external configuration file support
 
-# Symbols
-→ -> ->
-← -> <-
-• -> *
-```
+### Character Replacements
 
-### Themes
+The application includes built-in fallback replacements for:
+- German Umlauts (ä→ae, ö→oe, ü→ue, ß→ss)
+- Common symbols (→→->, ←→<-, •→*)
+- French accents (é→e, è→e, ç→c, à→a)
+- Spanish characters (ñ→n, í→i, ó→o)
+- Many Unicode symbols and characters
+
+
+---
+
+## Themes
+
 - **Dark**: Cyan titles on black background
 - **Light**: Blue titles on white background  
 - **Matrix**: Green on black terminal style
 - **Retro**: Yellow and cyan retro computing style
+
+The current mode (UTF-8 or ASCII) is displayed in the header for reference.
 
 ---
 
@@ -249,27 +193,8 @@ Commands are executed when you press Enter on the slide.
 
 ### Linux
 - Requires ncurses development headers
-- Wide character support recommended (ncursesw)
+- UTF-8 support in most modern terminals
 - Works in most terminal emulators
-
-### macOS
-- Tested on macOS 10.15+ 
-- Works with Terminal.app and iTerm2
-- Homebrew installation recommended
-
-### Windows
-- WSL (Windows Subsystem for Linux) recommended
-- Native Windows support via PDCurses
-- ConEmu or Windows Terminal recommended
-
-### FreeBSD/OpenBSD
-```bash
-# FreeBSD
-pkg install cmake ncurses pkgconf
-
-# OpenBSD  
-pkg_add cmake ncurses pkgconf
-```
 
 ---
 
@@ -280,39 +205,17 @@ pkg_add cmake ncurses pkgconf
 #### "ncurses not found"
 ```bash
 # Ubuntu/Debian
-sudo apt install libncurses-dev libncursesw5-dev
-
-# CentOS/RHEL/Fedora
-sudo dnf install ncurses-devel
-
-# macOS
-brew install ncurses
-
-# Arch Linux
-sudo pacman -S ncurses
-```
-
-#### "cmake: command not found"
-```bash
-# Ubuntu/Debian
-sudo apt install cmake
-
-# CentOS/RHEL
-sudo dnf install cmake
-
-# macOS
-brew install cmake
+sudo apt install libncurses-dev
 ```
 
 #### Unicode Characters Not Displaying
-- Ensure your terminal supports UTF-8
-- Use a terminal with Unicode support
-- Check the slide_config.txt for character replacements
+- The application automatically detects UTF-8 support
+- If characters appear as replacements, your terminal may not support UTF-8
+- Try using a modern terminal emulator
+- Check your LANG environment variable: `echo $LANG`
 
-#### Compilation Errors
-- Ensure C++17 compiler support
-- Check CMake version (3.15+ required)
-- Verify ncurses development headers are installed
+#### Character Replacement Issues
+- The application uses built-in fallbacks automatically
 
 ---
 
@@ -324,28 +227,7 @@ markdown-slide-presenter/
 ├── slides.cpp           # Main source code
 ├── CMakeLists.txt       # Build configuration
 ├── README.md            # Documentation
-├── slide_config.txt     # Character configuration
-└── build/               # Build directory
 ```
-
-### Building with Custom Options
-```bash
-# Debug build
-cmake -DCMAKE_BUILD_TYPE=Debug ..
-
-# Release build with optimizations
-cmake -DCMAKE_BUILD_TYPE=Release ..
-
-# Specify custom ncurses location
-cmake -DCMAKE_PREFIX_PATH=/custom/path ..
-```
-
-### Cross-Platform Development
-- Code uses standard C++17 features
-- ncurses provides cross-platform terminal handling
-- CMake handles platform-specific differences
-- Tested on Linux, macOS, Windows (WSL), and BSD
-
 ---
 
 ## Dependencies
@@ -357,93 +239,13 @@ cmake -DCMAKE_PREFIX_PATH=/custom/path ..
 ### Build Dependencies
 - **CMake**: Build system generator (3.15+)
 - **C++ Compiler**: GCC 7+, Clang 7+, or MSVC 2019+
-- **pkg-config**: Package configuration (Unix systems)
 
-### Optional Dependencies
-- **git**: For cloning the repository
-- **make**: Build tool (Unix systems)
-- **ninja**: Alternative build tool
-
----
-
-## Examples
-
-### Simple Presentation
-```markdown
-# Welcome
-This is my presentation
-
----
-
-## Agenda
-- Introduction
-- Main content  
-- Conclusion
-
----
-
-## Thank You
-Questions?
-```
-
-### Technical Presentation
-```markdown
-# System Status
-Live system monitoring
-
----
-
-## Disk Usage
-```$df -h
-```
-
----
-
-## Memory Info
-```$free -h
-```
-
----
-
-## Process List
-```$ps aux | head -10
-```
-```
-
----
-
-## Packaging
-
-### Creating Distribution Packages
-```bash
-# After building
-make package
-
-# This creates platform-specific packages:
-# Linux: .tar.gz, .deb, .rpm
-# macOS: .tar.gz, .dmg
-# Windows: .zip, .exe installer
-```
 
 ---
 
 ## Contributing
 
 Contributions are welcome! Please feel free to submit pull requests or open issues for bugs and feature requests.
-
-### Development Guidelines
-- Follow C++17 standards
-- Maintain cross-platform compatibility
-- Test on multiple terminal emulators
-- Document new features in README
-- Use consistent code formatting
-
-### Testing Platforms
-- Ubuntu 20.04+ / Debian 11+
-- CentOS 8+ / RHEL 8+ / Fedora 35+
-- macOS 10.15+
-- Windows 10+ (WSL)
-- FreeBSD 13+ / OpenBSD 7+
 
 ---
 

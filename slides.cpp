@@ -11,6 +11,8 @@
 #include <memory>
 #include <array>
 #include <locale.h>
+#include <cstdlib>
+#include <cstring>
 
 enum class Theme { DARK, LIGHT, MATRIX, RETRO };
 enum class AnimationType { NONE, FADE_IN, SLIDE_IN, TYPEWRITER };
@@ -46,6 +48,7 @@ private:
     bool show_timer = false;
     std::chrono::steady_clock::time_point start_time;
     std::vector<std::pair<std::string, std::string>> char_replacements;
+    bool utf8_supported = false;
     
     const std::vector<ThemeConfig> themes = {
         {COLOR_BLACK, COLOR_CYAN, COLOR_YELLOW, COLOR_WHITE, COLOR_GREEN, COLOR_MAGENTA, "Dark"},
@@ -54,65 +57,117 @@ private:
         {COLOR_BLACK, COLOR_YELLOW, COLOR_CYAN, COLOR_WHITE, COLOR_MAGENTA, COLOR_RED, "Retro"}
     };
     
-    void load_char_replacements(const std::string& config_file = "slide_config.txt") {
-        char_replacements.clear();
-        std::ifstream file(config_file);
-        if (!file.is_open()) return;
+    bool detect_utf8_support() {
+        // Check environment variables for UTF-8 support
+        const char* lang = getenv("LANG");
+        const char* lc_all = getenv("LC_ALL");
+        const char* lc_ctype = getenv("LC_CTYPE");
         
-        std::string line;
-        while (std::getline(file, line)) {
-            if (line.empty() || line[0] == '#') continue;
-            
-            size_t separator_pos = line.find(" -> ");
-            if (separator_pos == std::string::npos) continue;
-            
-            std::string search_term = line.substr(0, separator_pos);
-            std::string replacement = line.substr(separator_pos + 4);
-            
-            // Remove quotes if present
-            auto remove_quotes = [](std::string& s) {
-                if (s.length() >= 2 && s.front() == '"' && s.back() == '"') {
-                    s = s.substr(1, s.length() - 2);
-                }
-            };
-            remove_quotes(search_term);
-            remove_quotes(replacement);
-            
-            char_replacements.emplace_back(search_term, replacement);
+        if ((lang && (strstr(lang, "UTF-8") || strstr(lang, "utf8"))) ||
+            (lc_all && (strstr(lc_all, "UTF-8") || strstr(lc_all, "utf8"))) ||
+            (lc_ctype && (strstr(lc_ctype, "UTF-8") || strstr(lc_ctype, "utf8")))) {
+            return true;
         }
+        
+        // Also check if the current locale supports UTF-8
+        char* current_locale = setlocale(LC_CTYPE, nullptr);
+        if (current_locale && (strstr(current_locale, "UTF-8") || strstr(current_locale, "utf8"))) {
+            return true;
+        }
+        
+        return false;
+    }
+    
+    void load_char_replacements() {
+        char_replacements.clear();
+        
+        // Built-in replacements for common Unicode characters (used when UTF-8 not supported)
+        char_replacements = {
+            // German umlauts
+            std::make_pair("ä", "ae"), std::make_pair("ö", "oe"), std::make_pair("ü", "ue"), 
+            std::make_pair("Ä", "Ae"), std::make_pair("Ö", "Oe"), std::make_pair("Ü", "Ue"), 
+            std::make_pair("ß", "ss"),
+            // Arrows
+            std::make_pair("→", "->"), std::make_pair("←", "<-"), std::make_pair("↑", "^"), 
+            std::make_pair("↓", "v"), std::make_pair("⇒", "=>"), std::make_pair("⇐", "<="),
+            // Bullets and symbols
+            std::make_pair("•", "*"), std::make_pair("◦", "o"), std::make_pair("▪", "*"), 
+            std::make_pair("▫", "o"), std::make_pair("★", "*"), std::make_pair("☆", "*"),
+            std::make_pair("✓", "v"), std::make_pair("✗", "x"), std::make_pair("✔", "+"), 
+            std::make_pair("✘", "x"), std::make_pair("⚠", "!"), std::make_pair("⚡", "!"),
+            // French accents
+            std::make_pair("é", "e"), std::make_pair("è", "e"), std::make_pair("ê", "e"), 
+            std::make_pair("ë", "e"), std::make_pair("à", "a"), std::make_pair("â", "a"),
+            std::make_pair("ç", "c"), std::make_pair("î", "i"), std::make_pair("ï", "i"), 
+            std::make_pair("ô", "o"), std::make_pair("ù", "u"), std::make_pair("û", "u"),
+            std::make_pair("É", "E"), std::make_pair("È", "E"), std::make_pair("Ê", "E"), 
+            std::make_pair("À", "A"), std::make_pair("Ç", "C"),
+            // Spanish characters
+            std::make_pair("ñ", "n"), std::make_pair("Ñ", "N"), std::make_pair("í", "i"), 
+            std::make_pair("ó", "o"), std::make_pair("ú", "u"), std::make_pair("á", "a"),
+            std::make_pair("Í", "I"), std::make_pair("Ó", "O"), std::make_pair("Ú", "U"), 
+            std::make_pair("Á", "A"),
+            // Other common characters
+            std::make_pair("£", "GBP"), std::make_pair("€", "EUR"), std::make_pair("¥", "YEN"), 
+            std::make_pair("©", "(c)"), std::make_pair("®", "(R)"),
+            std::make_pair("™", "(TM)"), std::make_pair("°", "deg"), std::make_pair("±", "+/-"), 
+            std::make_pair("×", "x"), std::make_pair("÷", "/"),
+            // Mathematical symbols
+            std::make_pair("≈", "~="), std::make_pair("≠", "!="), std::make_pair("≤", "<="), 
+            std::make_pair("≥", ">="), std::make_pair("∞", "inf"),
+            std::make_pair("π", "pi"), std::make_pair("α", "alpha"), std::make_pair("β", "beta"), 
+            std::make_pair("γ", "gamma"), std::make_pair("δ", "delta"),
+            // Quotation marks
+            std::make_pair("\u201C", "\""), std::make_pair("\u201D", "\""), std::make_pair("'", "'"), 
+            std::make_pair("'", "'"), std::make_pair("«", "\""), std::make_pair("»", "\""),
+            // Dashes
+            std::make_pair("—", "--"), std::make_pair("–", "-"), std::make_pair("…", "..."),
+            // Various symbols
+            std::make_pair("§", "S"), std::make_pair("¶", "P"), std::make_pair("†", "+"), 
+            std::make_pair("‡", "++"), std::make_pair("‰", "0/00"),
+            std::make_pair("⁰", "0"), std::make_pair("¹", "1"), std::make_pair("²", "2"), 
+            std::make_pair("³", "3"), std::make_pair("⁴", "4"), std::make_pair("⁵", "5"),
+            std::make_pair("½", "1/2"), std::make_pair("¼", "1/4"), std::make_pair("¾", "3/4"), 
+            std::make_pair("⅓", "1/3"), std::make_pair("⅔", "2/3")
+        };
     }
     
     void safe_mvprintw(int y, int x, const std::string& text) {
-        std::string safe_text = text;
+        std::string output_text = text;
         
-        // Apply replacements from config file
-        for (const auto& [search, replace] : char_replacements) {
-            size_t pos = 0;
-            while ((pos = safe_text.find(search, pos)) != std::string::npos) {
-                safe_text.replace(pos, search.length(), replace);
-                pos += replace.length();
+        // If UTF-8 is not supported, apply character replacements
+        if (!utf8_supported) {
+            for (const auto& [search, replace] : char_replacements) {
+                size_t pos = 0;
+                while ((pos = output_text.find(search, pos)) != std::string::npos) {
+                    output_text.replace(pos, search.length(), replace);
+                    pos += replace.length();
+                }
             }
-        }
-        
-        // Handle remaining problematic UTF-8 characters
-        std::string result;
-        for (size_t i = 0; i < safe_text.length(); ++i) {
-            unsigned char c = static_cast<unsigned char>(safe_text[i]);
             
-            if (c >= 0xC0 && c <= 0xDF && i + 1 < safe_text.length()) {
-                result += "?"; i++; // 2-byte UTF-8
-            } else if (c >= 0xE0 && c <= 0xEF && i + 2 < safe_text.length()) {
-                result += "?"; i += 2; // 3-byte UTF-8
-            } else if (c >= 0xF0 && c <= 0xF7 && i + 3 < safe_text.length()) {
-                result += "?"; i += 3; // 4-byte UTF-8
-            } else if (c < 128) {
-                result += c; // ASCII
-            } else {
-                result += "?"; // Other problematic character
+            // Additional fallback for any remaining non-ASCII characters
+            std::string ascii_safe;
+            for (size_t i = 0; i < output_text.length(); ++i) {
+                unsigned char c = static_cast<unsigned char>(output_text[i]);
+                if (c < 128) {
+                    ascii_safe += c;
+                } else {
+                    // Skip UTF-8 continuation bytes and replace with ?
+                    if (c >= 0xC0 && c <= 0xDF && i + 1 < output_text.length()) {
+                        ascii_safe += "?"; i++; // 2-byte UTF-8
+                    } else if (c >= 0xE0 && c <= 0xEF && i + 2 < output_text.length()) {
+                        ascii_safe += "?"; i += 2; // 3-byte UTF-8
+                    } else if (c >= 0xF0 && c <= 0xF7 && i + 3 < output_text.length()) {
+                        ascii_safe += "?"; i += 3; // 4-byte UTF-8
+                    } else {
+                        ascii_safe += "?"; // Other problematic character
+                    }
+                }
             }
+            output_text = ascii_safe;
         }
         
-        mvprintw(y, x, "%s", result.c_str());
+        mvprintw(y, x, "%s", output_text.c_str());
     }
     
     std::string execute_shell_command(const std::string& command) {
@@ -218,9 +273,10 @@ private:
                 element.is_bold = true;
                 element.type = ElementType::HEADER3;
             }
-            // Lists
+            // Lists - preserve Unicode bullet if supported, otherwise use ASCII
             else if (line.substr(0, 2) == "- ") {
-                element.content = "• " + line.substr(2);
+                std::string bullet = utf8_supported ? "• " : "* ";
+                element.content = bullet + line.substr(2);
                 element.color_pair = 3;
                 element.x = 4;
                 element.type = ElementType::BULLET;
@@ -492,6 +548,10 @@ private:
     void draw_header() {
         attron(COLOR_PAIR(1) | A_BOLD);
         mvprintw(0, 2, "Slide %d/%d", current_slide + 1, (int)slides.size());
+        
+        // Show UTF-8 mode indicator
+        std::string mode_indicator = utf8_supported ? "UTF-8" : "ASCII";
+        mvprintw(0, COLS - 25, "Mode: %s", mode_indicator.c_str());
         mvprintw(0, COLS - 15, "Theme: %s", themes[static_cast<int>(current_theme)].name);
         
         if (show_timer) {
@@ -499,7 +559,7 @@ private:
             auto duration = std::chrono::duration_cast<std::chrono::seconds>(now - start_time);
             int minutes = duration.count() / 60;
             int seconds = duration.count() % 60;
-            mvprintw(0, COLS - 35, "Time: %02d:%02d", minutes, seconds);
+            mvprintw(0, COLS - 45, "Time: %02d:%02d", minutes, seconds);
         }
         
         attroff(COLOR_PAIR(1) | A_BOLD);
@@ -515,7 +575,7 @@ private:
         attroff(COLOR_PAIR(4));
         
         attron(COLOR_PAIR(3));
-        mvprintw(LINES-1, 2, "Controls: <-/-> Navigate | ENTER Execute | u/d Scroll | 'c' Reload Config | 't' Theme | 'h' Help | 'q' Quit");
+        mvprintw(LINES-1, 2, "Controls: <-/-> Navigate | ENTER Execute | u/d Scroll | 't' Theme | 'h' Help | 'q' Quit");
         attroff(COLOR_PAIR(3));
     }
     
@@ -565,7 +625,10 @@ private:
             "Supported Markdown:",
             "  # H1 Headers     ## H2 Headers    ### H3 Headers",
             "  - Bullet points  1. Numbered lists **Bold text**",
-            "  ```code blocks```  ```$shell command```"
+            "  ```code blocks```  ```$shell command```",
+            "",
+            "Unicode Support:",
+            utf8_supported ? "  UTF-8 mode: Unicode characters displayed natively" : "  ASCII mode: Unicode characters replaced with ASCII equivalents"
         };
         
         attron(COLOR_PAIR(1) | A_BOLD);
@@ -635,7 +698,10 @@ public:
             return;
         }
         
+        // Set up locale and detect UTF-8 support
         setlocale(LC_ALL, "");
+        utf8_supported = detect_utf8_support();
+        
         initscr();
         noecho();
         cbreak();
@@ -671,7 +737,7 @@ public:
                     }
                     break;
                     
-                case KEY_LEFT: case KEY_BACKSPACE: case 'h':
+                case KEY_LEFT: case KEY_BACKSPACE:
                     if (current_slide > 0) {
                         current_slide--;
                         use_animations ? render_slide_animated() : render_slide_instant();
@@ -726,18 +792,7 @@ public:
                     scroll_shell_output(1);
                     break;
                     
-                case 'c':
-                    load_char_replacements();
-                    clear();
-                    attron(COLOR_PAIR(2) | A_BOLD);
-                    mvprintw(LINES/2, 2, "Configuration reloaded! Press any key to continue...");
-                    attroff(COLOR_PAIR(2) | A_BOLD);
-                    refresh();
-                    getch();
-                    render_slide_instant();
-                    break;
-                    
-                case '?':
+                case 'h': case '?':
                     show_help();
                     break;
             }

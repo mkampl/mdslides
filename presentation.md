@@ -1,229 +1,262 @@
-# Live Shell Command Demo
+# 🚀 Live Shell Command Demo
 
-**Eine interaktive Präsentation mit echten System-Commands**
+**🎯 Eine interaktive Präsentation mit echten System-Commands**
 
-Willkommen zur Demo des erweiterten ncurses Slide-Presenters!
-
----
-
-## Agenda
-
-- System-Informationen live anzeigen
-- Dateisystem erkunden
-- Git-Repository-Status
-- Performance-Monitoring
-- Netzwerk-Diagnostics
+🎉 Willkommen zur Demo des erweiterten ncurses Slide-Presenters! 🎉
 
 ---
 
-## Aktuelle Dateien
+## 📋 Agenda
 
-Schauen wir uns an, was sich im aktuellen Verzeichnis befindet:
+- 💻 System-Informationen live anzeigen
+- 📁 Dateisystem erkunden  
+- 🔧 Git-Repository-Status
+- ⚡ Performance-Monitoring
+- 🌐 Netzwerk-Diagnostics
+
+---
+
+## 📂 Aktuelle Dateien
+
+🔍 Schauen wir uns an, was sich im aktuellen Verzeichnis befindet:
 
 ```$ls -la
 ```
 
-**Hinweis:** Drücke ENTER um den Command auszuführen!
+**💡 Hinweis:** Drücke ENTER um den Command auszuführen! ⚡
 
 ---
 
-## System-Zeit & Uptime
+## ⏰ System-Zeit & Uptime
 
-### Aktuelle Zeit:
+### 🕒 Aktuelle Zeit:
 ```$date +"%Y-%m-%d %H:%M:%S"
 ```
 
-### System-Uptime:
+### 📊 System-Uptime:
 ```$uptime
 ```
 
 ---
 
-## Speicher-Informationen
+## 💾 Speicher-Informationen
 
-### Festplattenspeicher:
+### 🗄️ Festplattenspeicher:
 ```$df -h
 ```
 
-### RAM-Verbrauch:
+### 🧠 RAM-Verbrauch:
 ```$free -h
 ```
 
 ---
 
-## Prozess-Monitoring
+## 🔄 Prozess-Monitoring
 
-### Top 10 Prozesse:
+### 🏆 Top 10 Prozesse:
 ```$ps aux | head -10
 ```
 
-### Aktuelle Benutzer:
+### 👥 Aktuelle Benutzer:
 ```$who
 ```
 
 ---
 
-## Netzwerk-Status
+## 🌐 Netzwerk-Status
 
-### Netzwerk-Interfaces:
+### 🔌 Netzwerk-Interfaces:
 ```$ip addr show | grep -E "inet |^[0-9]"
 ```
 
-### Aktive Verbindungen:
+### 🔗 Aktive Verbindungen:
 ```$netstat -tuln | head -10
 ```
 
 ---
 
-## Git Repository Status
+## 📝 Git Repository Status
 
-### Git-Status (falls in Git-Repo):
+### 🎯 Git-Status (falls in Git-Repo):
 ```$git status --short
 ```
 
-### Letzter Commit:
+### 📚 Letzter Commit:
 ```$git log --oneline -1
 ```
 
-### Branch-Info:
+### 🌿 Branch-Info:
 ```$git branch --show-current
 ```
 
 ---
 
-## Development Environment
+## 💻 Development Environment
 
-### Node.js Version:
-```$node --version 2>/dev/null || echo "Node.js nicht installiert"
+### 🟢 Node.js Version:
+```$node --version 2>/dev/null || echo "❌ Node.js nicht installiert"
 ```
 
-### Python Version:
-```$python3 --version 2>/dev/null || echo "Python3 nicht installiert"
+### 🐍 Python Version:
+```$python3 --version 2>/dev/null || echo "❌ Python3 nicht installiert"
 ```
 
-### GCC Compiler:
+### ⚙️ GCC Compiler:
 ```$gcc --version | head -1
 ```
 
 ---
 
-## Package Management
+## 📦 Package Management
 
-### NPM Packages (falls vorhanden):
-```$npm list --depth=0 2>/dev/null | head -5 || echo "Kein npm project"
+### 📋 NPM Packages (falls vorhanden):
+```$npm list --depth=0 2>/dev/null | head -5 || echo "❌ Kein npm project"
 ```
 
-### System Packages (Ubuntu/Debian):
+### 🎁 System Packages (Ubuntu/Debian):
 ```$dpkg -l | grep -E "^ii" | wc -l
 ```
 
 ---
 
-## System-Informationen
+## 🖥️ System-Informationen
 
-### CPU-Info:
+### 🧮 CPU-Info:
 ```$lscpu | grep -E "Model name|CPU\(s\):"
 ```
 
-### Memory-Info:
+### 💾 Memory-Info:
 ```$cat /proc/meminfo | grep -E "MemTotal|MemAvailable"
 ```
 
-### Kernel-Version:
+### 🔧 Kernel-Version:
 ```$uname -r
 ```
 
 ---
 
-## Performance-Tests
+## 🏃‍♂️ Performance-Tests
 
-### Einfacher CPU-Test (5 Sekunden):
-```$timeout 5s yes > /dev/null; echo "CPU-Test abgeschlossen"
+### ⚡ Einfacher CPU-Test (5 Sekunden):
+```$timeout 5s yes > /dev/null; echo "✅ CPU-Test abgeschlossen"
 ```
 
-### Disk-Speed-Test:
+### 💨 Disk-Speed-Test:
 ```$time dd if=/dev/zero of=/tmp/test bs=1M count=100 2>&1 | tail -2
 ```
 
-**Achtung:** Cleanup nach dem Test:
+**⚠️ Achtung:** Cleanup nach dem Test:
 ```$rm -f /tmp/test
 ```
 
 ---
 
-## Docker & Container (falls installiert)
+## 🐳 Docker & Container (falls installiert)
 
-### Docker-Version:
-```$docker --version 2>/dev/null || echo "Docker nicht installiert"
+### 📦 Docker-Version:
+```$docker --version 2>/dev/null || echo "❌ Docker nicht installiert"
 ```
 
-### Laufende Container:
-```$docker ps 2>/dev/null || echo "Docker daemon nicht erreichbar"
+### 🏃‍♂️ Laufende Container:
+```$docker ps 2>/dev/null || echo "❌ Docker daemon nicht erreichbar"
 ```
 
 ---
 
-## Logs & Debugging
+## 📋 Logs & Debugging
 
-### Letzte System-Logs:
-```$journalctl --no-pager -n 3 2>/dev/null || tail -3 /var/log/syslog 2>/dev/null || echo "Keine Log-Berechtigung"
+### 📜 Letzte System-Logs:
+```$journalctl --no-pager -n 3 2>/dev/null || tail -3 /var/log/syslog 2>/dev/null || echo "❌ Keine Log-Berechtigung"
 ```
 
-### Disk-Usage der größten Verzeichnisse:
+### 📊 Disk-Usage der größten Verzeichnisse:
 ```$du -h --max-depth=1 . | sort -hr | head -5
 ```
 
 ---
 
-## Custom Commands
+## 🛠️ Custom Commands
 
-### Erstelle eine temporäre Datei:
-```$echo "Hello from $(whoami) at $(date)" > /tmp/demo.txt
+### 📝 Erstelle eine temporäre Datei:
+```$echo "🎉 Hello from $(whoami) at $(date) 🎉" > /tmp/demo.txt
 ```
 
-### Zeige den Inhalt:
+### 👀 Zeige den Inhalt:
 ```$cat /tmp/demo.txt
 ```
 
-### Cleanup:
-```$rm /tmp/demo.txt && echo "Temporäre Datei gelöscht"
+### 🧹 Cleanup:
+```$rm /tmp/demo.txt && echo "✅ Temporäre Datei gelöscht"
 ```
 
 ---
 
-## Demo Ende
+## 🎯 Demo Ende
 
-**Vielen Dank für die Aufmerksamkeit!**
+**🙏 Vielen Dank für die Aufmerksamkeit! 🙏**
 
-### Zusammenfassung der Features:
-- Live Shell-Command Ausführung
-- Echtzeit-System-Informationen  
-- Interaktive Demos
-- Sichere Command-Bestätigung
+### 📝 Zusammenfassung der Features:
+- ⚡ Live Shell-Command Ausführung
+- 📊 Echtzeit-System-Informationen  
+- 🎮 Interaktive Demos
+- 🔒 Sichere Command-Bestätigung
 
-### Nächste Schritte:
-```$echo "Viel Spaß beim Experimentieren mit dem Slide-Presenter!"
+### 🚀 Nächste Schritte:
+```$echo "🎉 Viel Spaß beim Experimentieren mit dem Slide-Presenter! 🚀"
 ```
 
 ---
 
-## Code-Beispiel ohne Shell
+## 💾 Code-Beispiel ohne Shell
 
-Normale Code-Blöcke funktionieren weiterhin:
+🔧 Normale Code-Blöcke funktionieren weiterhin:
 
 ```cpp
 #include <iostream>
 
 int main() {
-    std::cout << "Hello World!" << std::endl;
+    std::cout << "🌟 Hello World! 🌟" << std::endl;
     return 0;
 }
 ```
 
 ```bash
-# Kompilierung (als normaler Code-Block)
+# 🔨 Kompilierung (als normaler Code-Block)
 g++ -o hello hello.cpp
 ./hello
 ```
 
-**Der Unterschied:** ```$command``` wird ausgeführt, ```language``` wird nur angezeigt!# 🚀 Live Shell Command Demo
+**💡 Der Unterschied:** ```$command``` wird ausgeführt ⚡, ```language``` wird nur angezeigt! 📺
+
+---
+
+## 🎨 Unicode Test Slide
+
+### 🇩🇪 Deutsche Umlaute:
+- Größe → Groesse
+- Qualität → Qualitaet  
+- Prüfung → Pruefung
+
+### ➡️ Pfeile & Symbole:
+- Navigation: ← → ↑ ↓
+- Logik: ⇒ ⇐ ⇔
+- Status: ✓ ✗ ⚠ ⚡
+
+### 🔢 Mathematik:
+- Vergleiche: ≈ ≠ ≤ ≥
+- Unendlich: ∞
+- Pi: π ≈ 3.14159
+
+### 🌟 Sterne & Symbole:
+- Bewertung: ★★★★★
+- Checkboxen: ☐ ☑ ☒
+- Wetter: ☀ ☁ ⛈ ❄
+
+---
+
+## 🎊 Finale
+
+```$echo "🎯 Presentation abgeschlossen! 🎊 Auf Wiedersehen! 👋"
+```
+
+**🚀 Happy coding with Unicode support! 🎉**
