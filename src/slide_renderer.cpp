@@ -27,7 +27,6 @@ Element SlideRenderer::render_presentation_ui(const PresentationState& state) {
         // Main slide view
         const auto& current_slide = state.get_current_slide();
         Element slide_content = render_slide(current_slide, state.use_animations);
-        
         content = vbox({
             render_header(state),
             separator(),
@@ -36,12 +35,45 @@ Element SlideRenderer::render_presentation_ui(const PresentationState& state) {
             render_progress_bar(state),
             render_footer()
         });
+        
+        // Shell confirmation overlay (if needed)
+        if (state.shell_confirmation_visible) {
+            auto confirmation_dialog = render_shell_confirmation_dialog(state.pending_shell_command);
+            content = dbox({
+                content,                    // Main content in background
+                confirmation_dialog | center | clear_under | border | 
+                bgcolor(Color::Black) | color(Color::White)
+            });
+        }
     }
     
     return theme_manager_->create_slide_container(content);
 }
 
-Element SlideRenderer::render_slide(const Slide& slide, bool with_animations) {
+Element SlideRenderer::render_shell_confirmation_dialog(const std::string& command) {
+    using namespace ftxui;  // Stelle sicher dass ftxui namespace verwendet wird
+    
+    return vbox({
+        text("Execute Shell Command?") | bold | center | color(Color::Yellow),
+        text(""),
+        hbox({
+            text("Command: "),
+            text(command) | color(Color::Cyan) | bold
+        }) | center,
+        text(""),
+        hbox({
+            text("Press ") | color(Color::White),
+            text("Y") | bold | color(Color::Green),
+            text(" to execute or ") | color(Color::White),
+            text("N") | bold | color(Color::Red),
+            text(" to cancel") | color(Color::White)
+        }) | center,
+        text(""),
+        text("ESC also cancels") | center | color(Color::Cyan)  // Gray -> DarkGray
+    }) | border | size(WIDTH, EQUAL, 50) | size(HEIGHT, EQUAL, 8) | bgcolor(Color::Black);
+}
+
+Element SlideRenderer::render_slide(const Slide& slide, [[maybe_unused]] bool with_animations) {
     return render_slide_content(slide);
 }
 
@@ -89,7 +121,7 @@ Element SlideRenderer::render_element(const SlideElement& element) {
             
         case ElementType::BULLET:
         case ElementType::NUMBERED:
-            return render_text_element(element) | add_indentation(2);
+            return add_indentation(render_text_element(element), 2);
             
         default:
             return render_text_element(element);
@@ -112,17 +144,16 @@ Element SlideRenderer::render_header_element(const SlideElement& element) {
 }
 
 Element SlideRenderer::render_code_element(const SlideElement& element) {
-    return theme_manager_->style_code(element.content) | add_indentation(4);
+    return add_indentation(theme_manager_->style_code(element.content), 4);
 }
 
 Element SlideRenderer::render_shell_element(const SlideElement& element) {
-    return theme_manager_->style_shell_command(element.content) | add_indentation(2);
+    return add_indentation(theme_manager_->style_shell_command(element.content), 2);
 }
 
 Element SlideRenderer::render_shell_output(const SlideElement& element) {
     if (!element.executed || element.shell_output_lines.empty()) {
-        return theme_manager_->style_shell_output("[Press ENTER to execute]", false) 
-               | add_indentation(4);
+        return add_indentation(theme_manager_->style_shell_output("[Press ENTER to execute]", false), 4);
     }
     
     return create_scrollable_output(element);
@@ -152,7 +183,7 @@ Element SlideRenderer::create_scrollable_output(const SlideElement& element) {
         output_box = vbox({output_box, scroll_indicator});
     }
     
-    return output_box | add_indentation(4);
+    return add_indentation(output_box, 4);
 }
 
 std::string SlideRenderer::format_scroll_indicator(const SlideElement& element) {

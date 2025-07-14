@@ -3,6 +3,7 @@
 #include "slide_types.hpp"
 #include <ftxui/dom/elements.hpp>
 #include <vector>
+#include <map>
 
 namespace mdslides {
 
@@ -43,7 +44,7 @@ public:
     
 private:
     Theme current_theme_;
-    std::vector<ThemeConfig> themes_;
+    std::map<std::string, ThemeConfig> themes_;
     
     void initialize_themes();
     ftxui::Element apply_element_style(const std::string& text, ftxui::Color color, bool bold = false) const;

@@ -28,6 +28,7 @@ public:
     ftxui::Element render_progress_bar(const PresentationState& state);
     ftxui::Element render_help_screen();
     ftxui::Element render_goto_dialog(const PresentationState& state);
+    ftxui::Element render_shell_confirmation_dialog(const std::string& command);
     
     // Layout helpers
     ftxui::Element create_slide_container(ftxui::Element content);

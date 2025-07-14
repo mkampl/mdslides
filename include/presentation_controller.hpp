@@ -7,6 +7,7 @@
 #include "shell_executor.hpp"
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
+#include <ftxui/component/event.hpp>
 #include <memory>
 #include <string>
 
@@ -41,6 +42,13 @@ public:
     void execute_shell_commands();
     void scroll_shell_output_up();
     void scroll_shell_output_down();
+    void show_shell_confirmation();
+    bool handle_shell_confirmation_key(ftxui::Event event);
+    
+    // Shell command utilities
+    std::string get_current_shell_command();
+    std::vector<std::string> get_current_shell_commands();
+    bool current_slide_has_shell_command();
     
     // State access
     const PresentationState& get_state() const { return state_; }

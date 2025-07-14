@@ -82,6 +82,10 @@ bool PresentationController::handle_key_event(Event event) {
         return handle_goto_key(event);
     }
     
+    if (state_.shell_confirmation_visible) {
+        return handle_shell_confirmation_key(event);
+    }
+    
     if (state_.help_visible) {
         // Any key closes help
         state_.help_visible = false;
@@ -162,8 +166,14 @@ bool PresentationController::handle_display_key(Event event) {
 
 bool PresentationController::handle_shell_key(Event event) {
     if (event == Event::Return) {
-        execute_shell_commands();
-        return true;
+        // Check if confirmation is running
+        if (state_.shell_confirmation_visible) {
+            return handle_shell_confirmation_key(event);
+        } else {
+            // Show confirmation instead of executing directly
+            show_shell_confirmation();
+            return true;
+        }
     }
     
     if (event == Event::Character('u')) {
@@ -179,18 +189,89 @@ bool PresentationController::handle_shell_key(Event event) {
     return false;
 }
 
+std::string PresentationController::get_current_shell_command() {
+    if (state_.slides.empty() || state_.current_slide >= state_.slides.size()) {
+        return "";
+    }
+    
+    const auto& current_slide = state_.slides[state_.current_slide];
+    
+    for (const auto& element : current_slide) {
+        if (element.type == ElementType::SHELL_COMMAND) {
+            return element.content;
+        }
+    }
+    
+    return "";
+}
+
+std::vector<std::string> PresentationController::get_current_shell_commands() {
+    std::vector<std::string> commands;
+    
+    if (state_.slides.empty() || state_.current_slide >= state_.slides.size()) {
+        return commands;
+    }
+    
+    const auto& current_slide = state_.slides[state_.current_slide];
+    
+    for (const auto& element : current_slide) {
+        if (element.type == ElementType::SHELL_COMMAND) {
+            commands.push_back(element.content);
+        }
+    }
+    
+    return commands;
+}
+
+bool PresentationController::current_slide_has_shell_command() {
+    return !get_current_shell_command().empty();
+}
+
+void PresentationController::show_shell_confirmation() {
+    // Get the current shell command
+    auto current_command = get_current_shell_command();
+    if (current_command.empty()) {
+        return;
+    }
+    
+    state_.shell_confirmation_visible = true;
+    state_.pending_shell_command = current_command;
+}
+
+bool PresentationController::handle_shell_confirmation_key(Event event) {
+    if (event == Event::Character('y') || event == Event::Character('Y')) {
+        // Yes - execute
+        execute_shell_commands();
+        state_.shell_confirmation_visible = false;
+        state_.pending_shell_command.clear();
+        return true;
+    }
+    
+    if (event == Event::Character('n') || event == Event::Character('N') || 
+        event == Event::Escape) {
+        // No - cancel
+        state_.shell_confirmation_visible = false;
+        state_.pending_shell_command.clear();
+        return true;
+    }
+    
+    return true; // Ignore all other keys
+}
+
 bool PresentationController::handle_goto_key(Event event) {
     if (event == Event::Return) {
         if (is_valid_slide_number(state_.goto_input)) {
             int slide_num = parse_slide_number(state_.goto_input);
             goto_slide(slide_num);
         }
-        state_.hide_goto_dialog();
+        state_.goto_dialog_visible = false;
+        state_.goto_input.clear();
         return true;
     }
     
     if (event == Event::Escape) {
-        state_.hide_goto_dialog();
+        state_.goto_dialog_visible = false;
+        state_.goto_input.clear();
         return true;
     }
     
@@ -259,7 +340,8 @@ void PresentationController::goto_slide(int slide_number) {
 }
 
 void PresentationController::show_goto_dialog() {
-    state_.show_goto_dialog();
+    state_.goto_dialog_visible = true;
+    state_.goto_input.clear();
 }
 
 void PresentationController::cycle_theme() {
@@ -268,8 +350,11 @@ void PresentationController::cycle_theme() {
 }
 
 void PresentationController::toggle_animations() {
-    state_.toggle_animations();
-    renderer_->set_animation_enabled(state_.use_animations);
+    state_.use_animations = !state_.use_animations;
+    // Ensure the renderer is informed
+    if (renderer_) {
+        renderer_->set_animation_enabled(state_.use_animations);
+    }
 }
 
 void PresentationController::toggle_timer() {
@@ -277,7 +362,7 @@ void PresentationController::toggle_timer() {
 }
 
 void PresentationController::toggle_help() {
-    state_.toggle_help();
+    state_.help_visible = !state_.help_visible;
 }
 
 void PresentationController::refresh_display() {
@@ -289,8 +374,8 @@ void PresentationController::execute_shell_commands() {
 }
 
 void PresentationController::execute_shell_commands_on_current_slide() {
-    if (!state_.slides.empty()) {
-        Slide& current_slide = state_.get_current_slide();
+    if (!state_.slides.empty() && state_.current_slide < state_.slides.size()) {
+        Slide& current_slide = state_.slides[state_.current_slide];
         if (shell_executor_->has_shell_commands(current_slide)) {
             shell_executor_->execute_shell_commands_in_slide(current_slide);
         }
@@ -298,8 +383,8 @@ void PresentationController::execute_shell_commands_on_current_slide() {
 }
 
 void PresentationController::scroll_shell_output_up() {
-    if (!state_.slides.empty()) {
-        Slide& current_slide = state_.get_current_slide();
+    if (!state_.slides.empty() && state_.current_slide < state_.slides.size()) {
+        Slide& current_slide = state_.slides[state_.current_slide];
         for (auto& element : current_slide) {
             if (element.type == ElementType::SHELL_COMMAND && element.executed) {
                 shell_executor_->scroll_output_up(element);
@@ -309,8 +394,8 @@ void PresentationController::scroll_shell_output_up() {
 }
 
 void PresentationController::scroll_shell_output_down() {
-    if (!state_.slides.empty()) {
-        Slide& current_slide = state_.get_current_slide();
+    if (!state_.slides.empty() && state_.current_slide < state_.slides.size()) {
+        Slide& current_slide = state_.slides[state_.current_slide];
         for (auto& element : current_slide) {
             if (element.type == ElementType::SHELL_COMMAND && element.executed) {
                 shell_executor_->scroll_output_down(element);
