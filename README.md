@@ -1,198 +1,282 @@
 # Markdown Slide Presenter
 
-A terminal-based presentation tool that renders markdown files as interactive slides with animations, themes, and shell command execution.
+A modern terminal-based presentation tool that renders markdown files as interactive slides with animations, themes, and shell command execution. Built with FTXUI and cmark for a smooth, responsive experience.
 
 ---
 
 ## Features
 
 ### Core Functionality
-- Markdown parsing and rendering
-- Unicode character support (UTF-8) with ASCII fallback
-- Multiple themes (Dark, Light, Matrix, Retro)
-- Slide animations (Fade-in, Slide-in, Typewriter)
-- Navigation controls
-- Progress bar and timer
-- Shell command execution within slides
+- **Modern UI**: Built with FTXUI for smooth, responsive terminal interface
+- **Markdown parsing**: Powered by cmark for robust CommonMark support
+- **Unicode support**: Full UTF-8 with intelligent ASCII fallback
+- **Multiple themes**: Dark, Light, Matrix, and Retro themes
+- **Slide animations**: Fade-in, slide-in, and typewriter effects
+- **Navigation controls**: Intuitive keyboard navigation
+- **Progress tracking**: Progress bar and optional timer
+- **Shell execution**: Safe shell command execution within slides
 
 ### Supported Markdown Elements
-- Headers (H1, H2, H3)
+- Headers (H1, H2, H3) with automatic styling
 - Bullet points and numbered lists
-- Bold text formatting
-- Code blocks
-- Interactive shell commands
+- Bold text formatting (**text**)
+- Code blocks with syntax highlighting
+- Interactive shell commands (```$command```)
 
 ---
 
 ## Installation
 
 ### Prerequisites
-- CMake 3.15 or higher
-- C++17 compatible compiler
-- ncurses library
+- **CMake** 3.15 or higher
+- **C++17** compatible compiler (GCC 7+, Clang 7+, MSVC 2019+)
+- **FTXUI** library
+- **cmark** library (CommonMark parser)
 
 ### Linux (Ubuntu/Debian)
 ```bash
-# Install dependencies
+# Install system dependencies
 sudo apt update
-sudo apt install -y cmake build-essential libncurses-dev
+sudo apt install -y cmake build-essential libcmark-dev
 
-# Clone and build
-git clone git@github.com:mkampl/mdslides.git
+# Install FTXUI (you may need to build from source or use vcpkg/conan)
+# Option 1: Using vcpkg
+git clone https://github.com/Microsoft/vcpkg.git
+cd vcpkg && ./bootstrap-vcpkg.sh
+./vcpkg install ftxui
+
+# Option 2: Build FTXUI from source
+git clone https://github.com/ArthurSonzogni/FTXUI.git
+cd FTXUI && mkdir build && cd build
+cmake .. && make -j$(nproc)
+sudo make install
+
+# Build the presentation tool
+git clone https://github.com/yourusername/mdslides.git
 cd mdslides
 mkdir build && cd build
 cmake ..
-make
+make -j$(nproc)
 
 # Install (optional)
 sudo make install
+```
+
+### Using Package Managers
+
+#### With vcpkg
+```bash
+# Install dependencies
+vcpkg install ftxui cmark
+
+# Build with CMake
+cmake -DCMAKE_TOOLCHAIN_FILE=[vcpkg root]/scripts/buildsystems/vcpkg.cmake ..
+make
+```
+
+#### With Conan
+```python
+# conanfile.txt
+[requires]
+ftxui/5.0.0
+cmark/0.30.2
+
+[generators]
+CMakeDeps
+CMakeToolchain
+```
+
+```bash
+conan install . --build=missing
+cmake --preset conan-default
+cmake --build --preset conan-default
 ```
 
 ---
 
 ## Quick Start
 
-### Building from Source
-```bash
-# Universal build steps
-mkdir build && cd build
-cmake ..
-make
-
-# Test the build
-./slides ../README.md
-```
-
----
-
-## Usage
-
 ### Basic Usage
 ```bash
-# Run with markdown file
-./slides presentation.md
+# Run with a markdown file
+./mdslides presentation.md
+
+# Show help
+./mdslides --help
+
+# Show version
+./mdslides --version
 ```
 
-### Markdown Format
+### Example Markdown Format
 ```markdown
-# Title Slide
-This is the main title
+# Welcome to My Presentation
+This is the title slide
 
 ---
 
-## Content Slide
-- First bullet point
-- Second bullet point
-- **Bold text example**
+## Agenda
+- Introduction
+- **Key Features**
+- Live Demo
+- Questions
 
 ---
 
 ### Code Example
 ```cpp
+#include <iostream>
+
 int main() {
+    std::cout << "Hello, World!" << std::endl;
     return 0;
 }
 ```
 
 ---
 
-### Shell Commands
+### Live Shell Commands
+Check the current directory:
+```$pwd
+```
+
+List files:
 ```$ls -la
 ```
 
-```$date
+Show system information:
+```$uname -a
 ```
+
 ---
 
-## Navigation Controls
+## Navigation
 
 ### Slide Navigation
-- Right Arrow / Space / 'l' - Next slide
-- Left Arrow / Backspace / 'h' - Previous slide
-- 'g' - Go to specific slide number
-- Home / '0' - First slide
-- End / '$' - Last slide
+- **→ / Space / l** - Next slide
+- **← / Backspace / h** - Previous slide  
+- **g** - Go to specific slide number
+- **Home / 0** - First slide
+- **End / $** - Last slide
 
 ### Shell Commands
-- Enter - Execute shell commands on current slide
-- 'u' / 'd' - Scroll shell output up/down
+- **ENTER** - Execute shell commands on current slide
+- **u / d** - Scroll shell output up/down
 
 ### Display Options
-- 't' - Cycle through themes
-- 'a' - Toggle animations
-- 'T' - Toggle timer display
-- 'r' - Refresh/redraw screen
+- **t** - Cycle through themes (Dark → Light → Matrix → Retro)
+- **a** - Toggle animations on/off
+- **T** - Toggle timer display
+- **r** - Refresh/redraw screen
 
 ### Other Controls
-- 'h' or '?' - Show help screen
-- 'q' or Escape - Quit application
-
----
-
-## Character Support
-
-The application automatically detects Unicode (UTF-8) support in your terminal:
-
-### Unicode Mode (UTF-8)
-- Native display of Unicode characters
-- Full international character support
-- Special symbols and characters displayed as intended
-
-### ASCII Fallback Mode
-- Automatic character replacement when Unicode is not supported
-- Built-in replacement map for common characters
-- Optional external configuration file support
-
-### Character Replacements
-
-The application includes built-in fallback replacements for:
-- German Umlauts (ä→ae, ö→oe, ü→ue, ß→ss)
-- Common symbols (→→->, ←→<-, •→*)
-- French accents (é→e, è→e, ç→c, à→a)
-- Spanish characters (ñ→n, í→i, ó→o)
-- Many Unicode symbols and characters
-
-
----
-
-## Themes
-
-- **Dark**: Cyan titles on black background
-- **Light**: Blue titles on white background  
-- **Matrix**: Green on black terminal style
-- **Retro**: Yellow and cyan retro computing style
-
-The current mode (UTF-8 or ASCII) is displayed in the header for reference.
+- **h / ?** - Show help screen
+- **q / Escape** - Quit application
 
 ---
 
 ## Advanced Features
 
-### Shell Command Execution
-Use special code blocks to execute shell commands:
+### Shell Command Security
+The application includes built-in security measures:
+- **Command filtering**: Dangerous commands (rm, sudo, etc.) are blocked
+- **Input sanitization**: Commands are cleaned before execution  
+- **Safe execution**: Commands run in controlled environment
+- **Output limits**: Shell output is truncated to prevent overflow
 
-```$uname -a
-```
+### Unicode and Character Support
+- **Automatic detection**: UTF-8 support detected from environment
+- **Intelligent fallback**: Automatic character replacement in ASCII mode
+- **Built-in replacements**: Comprehensive replacement map for common Unicode characters
+- **Mode display**: Current mode (UTF-8/ASCII) shown in header
 
-```$df -h
-```
-
-
-Commands are executed when you press Enter on the slide.
+### Themes
+1. **Dark**: Cyan headers on black background (default)
+2. **Light**: Blue headers on white background  
+3. **Matrix**: Green-on-black terminal style
+4. **Retro**: Yellow and cyan retro computing aesthetic
 
 ### Animation Types
-- **Fade-in**: Gradual appearance effect
-- **Slide-in**: Elements slide from right to left
+- **Fade-in**: Gradual appearance with opacity changes
+- **Slide-in**: Elements slide from right to left  
 - **Typewriter**: Character-by-character typing effect
+- **None**: Instant display (toggle with 'a')
 
 ---
 
-## Platform-Specific Notes
+## Project Structure
 
-### Linux
-- Requires ncurses development headers
-- UTF-8 support in most modern terminals
-- Works in most terminal emulators
+```
+mdslides/
+├── CMakeLists.txt              # Modern CMake build configuration
+├── README.md                   # This documentation
+├── include/                    # Header files
+│   ├── slide_types.hpp         # Core data types and enums
+│   ├── markdown_parser.hpp     # Markdown parsing interface
+│   ├── slide_renderer.hpp      # FTXUI rendering engine
+│   ├── theme_manager.hpp       # Theme system
+│   ├── shell_executor.hpp      # Safe shell execution
+│   └── presentation_controller.hpp # Main application controller
+└── src/                        # Implementation files
+    ├── main.cpp                # Application entry point
+    ├── markdown_parser.cpp     # cmark-based parser implementation  
+    ├── slide_renderer.cpp      # FTXUI rendering implementation
+    ├── theme_manager.cpp       # Theme management
+    ├── shell_executor.cpp      # Shell command execution
+    └── presentation_controller.cpp # Event handling and navigation
+```
+
+---
+
+## Dependencies
+
+### Runtime Dependencies
+- **FTXUI**: Modern terminal user interface library
+- **cmark**: CommonMark markdown parser
+- **C++ Standard Library**: C++17 features
+
+### Build Dependencies  
+- **CMake**: Build system generator (3.15+)
+- **C++ Compiler**: Supporting C++17 standard
+- **pkg-config**: For dependency detection
+
+### Optional Dependencies
+- **vcpkg** or **Conan**: For easier dependency management
+
+---
+
+## Building from Source
+
+### Traditional Build
+```bash
+# Clone repository
+git clone https://github.com/yourusername/mdslides.git
+cd mdslides
+
+# Create build directory
+mkdir build && cd build
+
+# Configure with CMake
+cmake ..
+
+# Build
+make -j$(nproc)
+
+# Run
+./mdslides ../README.md
+```
+
+### Debug Build
+```bash
+cmake -DCMAKE_BUILD_TYPE=Debug ..
+make
+```
+
+### Release Build
+```bash
+cmake -DCMAKE_BUILD_TYPE=Release ..
+make
+```
 
 ---
 
@@ -200,53 +284,67 @@ Commands are executed when you press Enter on the slide.
 
 ### Common Issues
 
-#### "ncurses not found"
+#### "FTXUI not found"
+```bash
+# Install FTXUI via vcpkg
+vcpkg install ftxui
+
+# Or build from source
+git clone https://github.com/ArthurSonzogni/FTXUI.git
+cd FTXUI && mkdir build && cd build
+cmake .. && make && sudo make install
+```
+
+#### "cmark not found"  
 ```bash
 # Ubuntu/Debian
-sudo apt install libncurses-dev
+sudo apt install libcmark-dev
+
+# Fedora/CentOS
+sudo dnf install cmark-devel
+
+# macOS
+brew install cmark
 ```
 
 #### Unicode Characters Not Displaying
-- The application automatically detects UTF-8 support
-- If characters appear as replacements, your terminal may not support UTF-8
-- Try using a modern terminal emulator
-- Check your LANG environment variable: `echo $LANG`
+- Check your terminal supports UTF-8: `echo $LANG`
+- Try setting: `export LANG=en_US.UTF-8`
+- The application automatically falls back to ASCII replacements
 
-#### Character Replacement Issues
-- The application uses built-in fallbacks automatically
-
----
-
-## Development
-
-### Project Structure
-```
-markdown-slide-presenter/
-├── main.cpp           # Main source code
-├── CMakeLists.txt       # Build configuration
-├── README.md            # Documentation
-```
----
-
-## Dependencies
-
-### Runtime Dependencies
-- **ncurses**: Terminal user interface library
-- **C++ Runtime**: Standard library support
-
-### Build Dependencies
-- **CMake**: Build system generator (3.15+)
-- **C++ Compiler**: GCC 7+, Clang 7+, or MSVC 2019+
-
+#### Shell Commands Not Executing
+- Commands are filtered for security
+- Check that your command doesn't contain dangerous patterns
+- Simple commands like `ls`, `pwd`, `date` should work
 
 ---
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit pull requests or open issues for bugs and feature requests.
+Contributions are welcome! The modular architecture makes it easy to:
+
+- **Add new themes** in `theme_manager.cpp`
+- **Extend markdown support** in `markdown_parser.cpp`  
+- **Add animations** in `slide_renderer.cpp`
+- **Improve shell security** in `shell_executor.cpp`
+
+### Development Setup
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
 ---
 
 ## License
 
-This project is open source. See the LICENSE for details.
+This project is open source. See the LICENSE file for details.
+
+---
+
+## Acknowledgments
+
+- **FTXUI**: Modern terminal UI framework by Arthur Sonzogni
+- **cmark**: Reference implementation of CommonMark
+- **Original inspiration**: Terminal-based presentation tools like `present` and `slides`
