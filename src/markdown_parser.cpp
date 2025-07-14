@@ -110,7 +110,7 @@ void MarkdownParser::load_character_replacements() {
         {"γ", "gamma"}, {"δ", "delta"},
         
         // Quotation marks
-        {""", "\""}, {""", "\""}, {"'", "'"}, 
+        {"\u201C", "\""}, {"\u201D", "\""}, {"'", "'"}, 
         {"'", "'"}, {"«", "\""}, {"»", "\""},
         
         // Dashes and ellipsis

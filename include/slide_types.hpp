@@ -78,6 +78,9 @@ struct PresentationState {
     bool help_visible = false;
     bool goto_dialog_visible = false;
     std::string goto_input;
+
+    bool shell_confirmation_visible = false;
+    std::string pending_shell_command;
     
     // Methods
     bool has_next_slide() const {
