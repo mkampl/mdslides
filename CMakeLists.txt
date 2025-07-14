@@ -62,8 +62,20 @@ elseif(MSVC)
     set(CMAKE_CXX_FLAGS_RELEASE "/O2 /DNDEBUG")
 endif()
 
+# Source files
+set(SOURCES
+    src/main.cc
+    src/slide_element.cc
+    src/theme_config.cc
+    src/markdown_parser.cc
+    src/slide_renderer.cc
+)
+
 # Create executable
-add_executable(mdslides main.cpp)
+add_executable(mdslides ${SOURCES})
+
+# Include directories
+target_include_directories(mdslides PRIVATE include)
 
 # Link libraries
 target_link_libraries(mdslides ${CURSES_LIBRARIES})
