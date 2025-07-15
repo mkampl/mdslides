@@ -69,6 +69,7 @@ set(SOURCES
     src/theme_config.cc
     src/markdown_parser.cc
     src/slide_renderer.cc
+    src/ncurses_renderer.cc
 )
 
 # Create executable
