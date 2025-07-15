@@ -45,6 +45,7 @@ private:
     void render_element_animated(const SlideElement& element);
     void render_element_instant(const SlideElement& element);
     void clear_with_background();
+    void clear_with_background(int start_line,int end_line);
     bool check_for_input_during_animation();
     
     // Theme management

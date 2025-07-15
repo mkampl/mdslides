@@ -35,29 +35,8 @@ void NCursesRenderer::cleanup() {
     endwin();
 }
 
-// In NCursesRenderer, add a helper method:
-bool NCursesRenderer::check_for_input_during_animation() {
-    // Set nodelay mode to make getch() non-blocking
-    nodelay(stdscr, TRUE);
-    int ch = getch();
-    nodelay(stdscr, FALSE);
-    
-    if (ch != ERR) {
-        // Put the character back in the input buffer
-        ungetch(ch);
-        return true;  // Input detected
-    }
-    return false;  // No input
-}
-
 void NCursesRenderer::render_slide(const std::vector<SlideElement>& elements, bool animated) {
-    attron(COLOR_PAIR(0));
-    for (int y = 2; y < LINES - 3; ++y) {  // Skip header (0-1) and footer (LINES-3 to LINES-1)
-        for (int x = 0; x < COLS; ++x) {
-            mvaddch(y, x, ' ');
-        }
-    }
-    attroff(COLOR_PAIR(0));
+    clear_with_background(2,LINES-3); //clear area between header and footer
     
     if (animated) {
         for (const auto& element : elements) {
@@ -93,13 +72,19 @@ void NCursesRenderer::draw_header(int current_slide, int total_slides, const std
     attron(COLOR_PAIR(1) | A_BOLD);
     mvprintw(0, 2, "Slide %d/%d", current_slide + 1, total_slides);
     
-    // Show UTF-8 mode indicator
+    // Clear and show UTF-8 mode indicator
     std::string mode_indicator = utf8_mode ? "UTF-8" : "ASCII";
-    mvprintw(0, COLS - 25, "Mode: %s", mode_indicator.c_str());
-    mvprintw(0, COLS - 15, "Theme: %s", theme_name.c_str());
+    mvprintw(0, COLS - 25, "Mode: %-6s", mode_indicator.c_str());
+    
+    // Clear and show theme name with proper spacing
+    mvprintw(0, COLS - 15, "Theme: %-8s", theme_name.c_str());
     
     if (show_timer) {
-        mvprintw(0, COLS - 45, "Time: %02d:%02d", minutes, seconds);
+        // Clear timer area and show time
+        mvprintw(0, COLS - 45, "Time: %02d:%02d    ", minutes, seconds);
+    } else {
+        // Clear timer area when timer is off
+        mvprintw(0, COLS - 45, "             ");
     }
     
     attroff(COLOR_PAIR(1) | A_BOLD);
@@ -410,13 +395,6 @@ void NCursesRenderer::render_element_animated(const SlideElement& element) {
             for (size_t i = 0; i <= element.content.length(); ++i) {
                 safe_mvprintw(element.y, element.x, element.content.substr(0, i));
                 refresh();
-                // Check for input before sleeping
-        if (check_for_input_during_animation()) {
-            // Skip to end of animation
-            safe_mvprintw(element.y, element.x, element.content);
-            refresh();
-            break;
-        }
                 std::this_thread::sleep_for(std::chrono::milliseconds(30));
             }
             attroff(attrs);
@@ -438,13 +416,6 @@ void NCursesRenderer::render_element_animated(const SlideElement& element) {
                 safe_mvprintw(element.y, std::max(x, element.x), element.content);
                 attroff(attrs);
                 refresh();
-                // Check for input before sleeping
-        if (check_for_input_during_animation()) {
-            // Skip to end of animation
-            safe_mvprintw(element.y, element.x, element.content);
-            refresh();
-            break;
-        }
                 std::this_thread::sleep_for(std::chrono::milliseconds(30));
             }
             // Final clear and print
@@ -469,13 +440,6 @@ void NCursesRenderer::render_element_animated(const SlideElement& element) {
                 if (i < 3) {
                     mvprintw(element.y, element.x, "%*s", (int)element.content.length(), "");
                     refresh();
-                    // Check for input before sleeping
-        if (check_for_input_during_animation()) {
-            // Skip to end of animation
-            safe_mvprintw(element.y, element.x, element.content);
-            refresh();
-            break;
-        }
                     std::this_thread::sleep_for(std::chrono::milliseconds(40));
                 }
                 attroff(attrs | A_DIM);
@@ -504,10 +468,15 @@ void NCursesRenderer::render_element_instant(const SlideElement& element) {
 }
 
 void NCursesRenderer::clear_with_background() {
+    clear_with_background(0,LINES);
+}
+void NCursesRenderer::clear_with_background(int start_line, int end_line) {
     // Also explicitly fill any remaining areas
+    if(start_line<0) start_line = 0;
+    if(end_line>LINES) end_line = LINES;
     attron(COLOR_PAIR(0));
     std::string line(COLS, ' ');
-    for (int y = 0; y < LINES; ++y) {
+    for (int y = start_line; y < end_line; ++y) {
         for (int x = 0; x < COLS; ++x) {
             mvprintw(y, 0, "%s", line.c_str());
         }
