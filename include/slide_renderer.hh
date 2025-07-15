@@ -24,9 +24,10 @@ private:
     // Navigation and UI
     void goto_slide();
     void render_current_slide(bool animated);
+    void get_timer_values(int& minutes, int& seconds);
+    std::string get_current_theme_name();
     
     // Member variables
-    Theme current_theme;
     SlideCollection slides;
     MarkdownParser parser;
     std::unique_ptr<ISlideRenderer> renderer;
@@ -34,4 +35,5 @@ private:
     bool show_timer;
     std::chrono::steady_clock::time_point start_time;
     bool utf8_supported;
+    Theme current_theme;
 };

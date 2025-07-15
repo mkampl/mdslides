@@ -1,6 +1,6 @@
 #include "slide_renderer.hh"
 #include "ncurses_renderer.hh"
-#include "ncurses.h"
+#include <ncurses.h>
 #include <algorithm>
 #include <thread>
 #include <chrono>
@@ -13,7 +13,7 @@
 #include <sstream>
 
 MarkdownSlideRenderer::MarkdownSlideRenderer() 
-    : current_slide(0), show_timer(false), utf8_supported(false),current_theme(Theme::DARK) {
+    : current_slide(0), show_timer(false), utf8_supported(false), current_theme(Theme::DARK) {
     
     // Create ncurses renderer (later we can add conditional FTXUI creation here)
     renderer = std::make_unique<NCursesRenderer>();
@@ -80,7 +80,7 @@ void MarkdownSlideRenderer::execute_shell_commands_on_slide() {
     int ch = renderer->get_input();
     renderer->clear_message_area();
     
-    if (ch == '\n' || ch == '\r' || ch == KEY_ENTER) {
+    if (ch == '\n' || ch == '\r' || ch == 10) {
         for (auto& element : slides.get_slide(current_slide)) {
             if (element.type == ElementType::SHELL_COMMAND && !element.executed) {
                 execute_single_shell_command(element);
@@ -151,24 +151,33 @@ void MarkdownSlideRenderer::goto_slide() {
     render_current_slide(false);
 }
 
-void MarkdownSlideRenderer::render_current_slide(bool animated) {
-    // Calculate timer values first
-    int minutes = 0, seconds = 0;
+void MarkdownSlideRenderer::get_timer_values(int& minutes, int& seconds) {
     if (show_timer) {
         auto now = std::chrono::steady_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::seconds>(now - start_time);
         minutes = duration.count() / 60;
         seconds = duration.count() % 60;
+    } else {
+        minutes = seconds = 0;
     }
+}
+
+std::string MarkdownSlideRenderer::get_current_theme_name() {
+    const char* theme_names[] = {"Dark", "Light", "Matrix", "Retro"};
+    return theme_names[static_cast<int>(current_theme)];
+}
+
+void MarkdownSlideRenderer::render_current_slide(bool animated) {
     
-    // Draw header and footer BEFORE animations
-    renderer->draw_header(current_slide, slides.get_slide_count(), "Dark", 
+    int minutes, seconds;
+    get_timer_values(minutes, seconds);
+    
+    renderer->draw_header(current_slide, slides.get_slide_count(), get_current_theme_name(), 
                          show_timer, minutes, seconds, utf8_supported);
     renderer->draw_footer();
     renderer->draw_progress_bar(current_slide, slides.get_slide_count());
     renderer->refresh_display();
-    
-    // THEN do the slide content with animations
+
     renderer->render_slide(slides.get_slide(current_slide), animated);
     renderer->refresh_display();
 }
@@ -184,7 +193,7 @@ void MarkdownSlideRenderer::run() {
     }
     
     renderer->initialize();
-    renderer->apply_theme(Theme::DARK);
+    renderer->apply_theme(current_theme);
     start_time = std::chrono::steady_clock::now();
     
     bool use_animations = true;
