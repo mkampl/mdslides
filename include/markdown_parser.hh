@@ -12,6 +12,9 @@ public:
     
 private:
     void parse_slide(const std::string& content, SlideCollection& slides);
+    void parse_slide_with_cmark(const std::string& content, SlideCollection& slides);
+    void parse_slide_direct(const std::string& content, SlideCollection& slides);
+    void parse_slide_original(const std::string& content, SlideCollection& slides); // Your fixed version
     void load_char_replacements();
     bool detect_utf8_support();
     

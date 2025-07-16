@@ -6,6 +6,177 @@
 #include <locale.h>
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
+
+// #define CMARK_SUPPORT
+#ifdef CMARK_SUPPORT
+#include <cmark-gfm.h>
+
+
+class CMarkSlideParser {
+private:
+    std::vector<SlideElement>& elements;
+    int current_y;
+    bool utf8_supported;
+    
+public:
+    CMarkSlideParser(std::vector<SlideElement>& elems, bool utf8_support) 
+        : elements(elems), current_y(3), utf8_supported(utf8_support) {}
+    
+    void parseNode(cmark_node *node) {
+        cmark_node *child;
+        cmark_node_type type = cmark_node_get_type(node);
+        
+        switch (type) {
+            case CMARK_NODE_HEADING: {
+                int level = cmark_node_get_heading_level(node);
+                std::string content = getTextContent(node);
+                
+                SlideElement element;
+                element.y = current_y++;
+                element.x = 2;
+                element.content = "1"+content;
+                element.is_bold = true;
+                element.animation = AnimationType::SLIDE_IN;
+                
+                switch (level) {
+                    case 1:
+                        element.color_pair = 1;
+                        element.type = ElementType::HEADER1;
+                        element.x = std::max((COLS - (int)content.length()) / 2, 2);
+                        break;
+                    case 2:
+                        element.color_pair = 2;
+                        element.type = ElementType::HEADER2;
+                        break;
+                    case 3:
+                        element.color_pair = 4;
+                        element.type = ElementType::HEADER3;
+                        break;
+                    default:
+                        element.color_pair = 4;
+                        element.type = ElementType::HEADER3;
+                        break;
+                }
+                
+                elements.push_back(element);
+                break;
+            }
+            
+            case CMARK_NODE_CODE_BLOCK: {
+                const char* info = cmark_node_get_fence_info(node);
+                const char* literal = cmark_node_get_literal(node);
+                
+                // Check if it's a shell command
+                if (info && strlen(info) > 0 && info[0] == '$') {
+                    std::string command = std::string(info + 1); // Skip the $
+                    
+                    // Shell command element
+                    SlideElement shell_cmd;
+                    shell_cmd.y = current_y++;
+                    shell_cmd.x = 4;
+                    shell_cmd.content = "$ " + command;
+                    shell_cmd.color_pair = 7;
+                    shell_cmd.is_bold = true;
+                    shell_cmd.type = ElementType::SHELL_COMMAND;
+                    shell_cmd.shell_command = command;
+                    shell_cmd.animation = AnimationType::TYPEWRITER;
+                    elements.push_back(shell_cmd);
+                    
+                    // Shell output placeholder
+                    SlideElement shell_output;
+                    shell_output.y = current_y++;
+                    shell_output.x = 4;
+                    shell_output.content = "[Press ENTER to execute]";
+                    shell_output.color_pair = 8;
+                    shell_output.type = ElementType::SHELL_OUTPUT;
+                    shell_output.animation = AnimationType::NONE;
+                    elements.push_back(shell_output);
+                    
+                    current_y++; // Add spacing
+                } else {
+                    // Regular code block
+                    std::string code = literal ? literal : "";
+                    std::istringstream iss(code);
+                    std::string line;
+                    
+                    while (std::getline(iss, line)) {
+                        SlideElement element;
+                        element.y = current_y++;
+                        element.x = 4;
+                        element.content = "    " + line;
+                        element.color_pair = 6;
+                        element.type = ElementType::CODE_BLOCK;
+                        element.animation = AnimationType::TYPEWRITER;
+                        elements.push_back(element);
+                    }
+                }
+                break;
+            }
+            
+            case CMARK_NODE_LIST: {
+                // Process list items
+                for (child = cmark_node_first_child(node); child; child = cmark_node_next(child)) {
+                    if (cmark_node_get_type(child) == CMARK_NODE_ITEM) {
+                        std::string content = getTextContent(child);
+                        std::string bullet = utf8_supported ? "• " : "* ";
+                        
+                        SlideElement element;
+                        element.y = current_y++;
+                        element.x = 4;
+                        element.content = bullet + content;
+                        element.color_pair = 3;
+                        element.type = ElementType::BULLET;
+                        element.animation = AnimationType::SLIDE_IN;
+                        elements.push_back(element);
+                    }
+                }
+                break;
+            }
+            
+            case CMARK_NODE_PARAGRAPH: {
+                std::string content = getTextContent(node);
+                if (!content.empty()) {
+                    SlideElement element;
+                    element.y = current_y++;
+                    element.x = 2;
+                    element.content = content;
+                    element.color_pair = 3;
+                    element.type = ElementType::TEXT;
+                    elements.push_back(element);
+                }
+                break;
+            }
+            
+            default:
+                // Process children for other node types
+                for (child = cmark_node_first_child(node); child; child = cmark_node_next(child)) {
+                    parseNode(child);
+                }
+                break;
+        }
+    }
+    
+private:
+    std::string getTextContent(cmark_node *node) {
+        std::string result;
+        
+        if (cmark_node_get_type(node) == CMARK_NODE_TEXT) {
+            const char* literal = cmark_node_get_literal(node);
+            if (literal) {
+                result = literal;
+            }
+        } else {
+            cmark_node *child;
+            for (child = cmark_node_first_child(node); child; child = cmark_node_next(child)) {
+                result += getTextContent(child);
+            }
+        }
+        
+        return result;
+    }
+};
+#endif
 
 MarkdownParser::MarkdownParser() : utf8_supported(false) {
     utf8_supported = detect_utf8_support();
@@ -112,7 +283,59 @@ void MarkdownParser::load_slides(const std::string& filename, SlideCollection& s
     }
 }
 
+void MarkdownParser::parse_slide_with_cmark(const std::string& content, SlideCollection& slides) {
+#ifdef CMARK_SUPPORT
+    // Create parser with basic options
+    cmark_parser *parser = cmark_parser_new(CMARK_OPT_DEFAULT);
+    
+    if (!parser) {
+        throw std::runtime_error("Failed to create cmark parser");
+    }
+    
+    // Parse markdown
+    cmark_parser_feed(parser, content.c_str(), content.length());
+    cmark_node *document = cmark_parser_finish(parser);
+    
+    if (!document) {
+        cmark_parser_free(parser);
+        throw std::runtime_error("Failed to parse markdown");
+    }
+    
+    // Convert to slide elements
+    std::vector<SlideElement> elements;
+    CMarkSlideParser slide_parser(elements, utf8_supported);
+    slide_parser.parseNode(document);
+    
+    // Cleanup
+    cmark_node_free(document);
+    cmark_parser_free(parser);
+    
+    // Add to slides
+    slides.add_slide(elements);
+#else
+    throw std::runtime_error("cmark support not compiled in");
+#endif
+}
+
+// Updated parse_slide method
 void MarkdownParser::parse_slide(const std::string& content, SlideCollection& slides) {
+#ifdef CMARK_SUPPORT
+    try {
+        parse_slide_with_cmark(content, slides);
+        return;
+    } catch (const std::exception& e) {
+        std::cerr << "cmark parsing failed: " << e.what() << ", falling back to built-in parser" << std::endl;
+        // Fall through to original parser
+    }
+#endif
+    
+    // Use your original/fixed parser
+    // parse_slide_original(content, slides);
+}
+
+// You'll need to rename your current parse_slide method to this:
+void MarkdownParser::parse_slide_original(const std::string& content, SlideCollection& slides) {
+    // Your fixed shell block detection code here
     std::vector<SlideElement> elements;
     std::istringstream iss(content);
     std::string line;
@@ -128,10 +351,11 @@ void MarkdownParser::parse_slide(const std::string& content, SlideCollection& sl
         element.x = 2;
         element.delay_ms = y * 50;
         
-        // Shell block detection
+        // Shell block detection - FIXED VERSION
         if (line.substr(0, 4) == "```$") {
-            in_shell_block = !in_shell_block;
-            if (in_shell_block) {
+            if (!in_shell_block) {
+                // Opening shell block
+                in_shell_block = true;
                 std::string command = line.substr(4);
                 
                 // Shell command element
@@ -153,12 +377,22 @@ void MarkdownParser::parse_slide(const std::string& content, SlideCollection& sl
                 element.type = ElementType::SHELL_OUTPUT;
                 element.animation = AnimationType::NONE;
                 elements.push_back(element);
-                y += 7;
+                y += 2; // Only increment by 2, not 7!
+            } else {
+                // Closing shell block
+                in_shell_block = false;
+                y++; // Just move to next line
             }
             continue;
         }
         
-        if (in_shell_block) continue;
+        // Skip content inside shell blocks
+        if (in_shell_block) {
+            continue;
+        }
+        
+        // Rest of your original parsing logic...
+        // (Regular code blocks, headers, lists, etc.)
         
         // Regular code block
         if (line.substr(0, 3) == "```") {
@@ -196,7 +430,7 @@ void MarkdownParser::parse_slide(const std::string& content, SlideCollection& sl
             element.is_bold = true;
             element.type = ElementType::HEADER3;
         }
-        // Lists - preserve Unicode bullet if supported, otherwise use ASCII
+        // Lists
         else if (line.substr(0, 2) == "- ") {
             std::string bullet = utf8_supported ? "• " : "* ";
             element.content = bullet + line.substr(2);
