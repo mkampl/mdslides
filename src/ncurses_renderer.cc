@@ -220,7 +220,7 @@ void NCursesRenderer::update_shell_output(const SlideElement& shell_element) {
 
     // Clear old output WITH background color
     attron(COLOR_PAIR(0));
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < shell_element.max_output_lines; ++i) {
         for (int x = 0; x < COLS; ++x) {
             mvaddch(output_y + i, x, ' ');
         }
