@@ -3,6 +3,19 @@
 #include <vector>
 #include <string>
 
+// Define color constants when not using ncurses
+#ifdef USE_FTXUI_RENDERER
+// FTXUI color mapping - these are just indexes for our theme system
+#define COLOR_BLACK   0
+#define COLOR_RED     1
+#define COLOR_GREEN   2
+#define COLOR_YELLOW  3
+#define COLOR_BLUE    4
+#define COLOR_MAGENTA 5
+#define COLOR_CYAN    6
+#define COLOR_WHITE   7
+#endif
+
 enum class Theme
 {
     DARK,

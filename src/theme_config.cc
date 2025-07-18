@@ -1,5 +1,9 @@
 #include "theme_config.hh"
+
+// Only include ncurses when not using FTXUI
+#ifndef USE_FTXUI_RENDERER
 #include <ncurses.h>
+#endif
 
 ThemeManager::ThemeManager() : current_theme(Theme::DARK)
 {
@@ -13,6 +17,9 @@ ThemeManager::ThemeManager() : current_theme(Theme::DARK)
 void ThemeManager::setup_theme(Theme theme)
 {
     current_theme = theme;
+    
+#ifndef USE_FTXUI_RENDERER
+    // Only call ncurses functions when using ncurses renderer
     const auto &theme_config = themes[static_cast<int>(theme)];
 
     init_pair(1, theme_config.title_color, theme_config.bg_color);
@@ -30,6 +37,7 @@ void ThemeManager::setup_theme(Theme theme)
     // Set window background
     wbkgd(stdscr, ' ' | COLOR_PAIR(9));
     refresh();
+#endif
 }
 
 void ThemeManager::cycle_theme()

@@ -1,7 +1,8 @@
 #include "shell_command_selector.hh"
-#include "ncurses_renderer.hh"
-#include <ncurses.h>
+#include "renderer_interface.hh"
 #include <algorithm>
+
+// Remove the ncurses include and direct ncurses calls
 
 ShellCommandSelector::ShellCommandSelector()
     : selected_index(0), selection_mode(false), renderer(nullptr)
@@ -119,41 +120,28 @@ void ShellCommandSelector::clear_all_highlights()
 
 void ShellCommandSelector::highlight_command(int index, bool highlight)
 {
-    if (index < 0 || index >= (int)shell_commands.size())
+    if (index < 0 || index >= (int)shell_commands.size() || !renderer)
         return;
 
     SlideElement *cmd = shell_commands[index];
-    int y = cmd->y;
-    int x = cmd->x;
-
+    
     if (highlight)
     {
-        // Draw selection indicator
-        attron(COLOR_PAIR(1) | A_BOLD);
-        mvprintw(y, x - 2, "→"); // Arrow indicator
-        attroff(COLOR_PAIR(1) | A_BOLD);
-
-        // Highlight the command text with reverse video
-        attron(COLOR_PAIR(6) | A_BOLD | A_REVERSE);
-        mvprintw(y, x, "%s", cmd->content.c_str());
-        attroff(COLOR_PAIR(6) | A_BOLD | A_REVERSE);
-
-        // Draw end indicator
-        attron(COLOR_PAIR(1) | A_BOLD);
-        mvprintw(y, x + (int)cmd->content.length(), "←");
-        attroff(COLOR_PAIR(1) | A_BOLD);
+        // For now, we'll modify the element content to show selection
+        // This is a simplified approach - a full implementation would
+        // need the renderer to support highlighting
+        if (cmd->content.find("→ ") != 0) {
+            cmd->content = "→ " + cmd->content + " ←";
+        }
     }
     else
     {
-        // Clear selection indicators
-        mvprintw(y, x - 2, " ");
-        mvprintw(y, x + (int)cmd->content.length(), " ");
-
-        // Restore normal command appearance
-        attron(COLOR_PAIR(6));
-        mvprintw(y, x, "%s", cmd->content.c_str());
-        attroff(COLOR_PAIR(6));
+        // Remove selection indicators
+        if (cmd->content.find("→ ") == 0 && cmd->content.find(" ←") == cmd->content.length() - 2) {
+            cmd->content = cmd->content.substr(2, cmd->content.length() - 4);
+        }
     }
-
-    refresh();
+    
+    // Tell renderer to refresh
+    renderer->refresh_display();
 }

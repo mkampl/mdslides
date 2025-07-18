@@ -82,12 +82,22 @@ private:
 
         current_y++; // spacing
 
+        // Get screen width in a portable way
+        int screen_width = 80; // Default fallback
+#ifndef USE_FTXUI_RENDERER
+        // Only use COLS when ncurses is available
+        if (COLS > 0)
+        {
+            screen_width = COLS;
+        }
+#endif
+
         switch (level)
         {
         case 1:
             element.color_pair = 1;
             element.type = ElementType::HEADER1;
-            element.x = std::max((COLS - (int)content.length()) / 2, 2);
+            element.x = std::max((screen_width - (int)content.length()) / 2, 2);
             break;
         case 2:
             element.color_pair = 2;
