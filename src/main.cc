@@ -1,8 +1,10 @@
 #include "slide_renderer.hh"
 #include <cstdio>
 
-int main(int argc, char* argv[]) {
-    if (argc != 2) {
+int main(int argc, char *argv[])
+{
+    if (argc != 2)
+    {
         printf("Usage: %s <markdown_file>\n", argv[0]);
         printf("\nExample markdown format:\n");
         printf("# Title Slide\n");
@@ -26,10 +28,10 @@ int main(int argc, char* argv[]) {
         printf("```\n");
         return 1;
     }
-    
+
     MarkdownSlideRenderer renderer;
     renderer.load_slides(argv[1]);
     renderer.run();
-    
+
     return 0;
 }
