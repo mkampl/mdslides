@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 
+class ISlideRenderer; // Forward declaration
+
 class ShellPopup
 {
 private:
@@ -13,10 +15,11 @@ private:
     std::vector<std::string> output_lines;
     std::string command;
     bool is_running;
+    ISlideRenderer *renderer; // Add renderer reference
 
 public:
     ShellPopup(int screen_width, int screen_height);
-
+    void set_renderer(ISlideRenderer *r); // Add setter for renderer
     void show(const std::string &cmd);
 
 private:

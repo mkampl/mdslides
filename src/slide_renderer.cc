@@ -1,9 +1,15 @@
-// Replace the entire slide_renderer.cc content with this cleaned version:
+// Replace the entire slide_renderer.cc content with this fixed version:
 
 #include "slide_renderer.hh"
+
+// Conditional includes based on build configuration
+#ifdef USE_FTXUI_RENDERER
+#include "ftxui_renderer.hh"
+#else
 #include "ncurses_renderer.hh"
+#endif
+
 #include "shell_popup.hh"
-#include <ncurses.h>
 #include <algorithm>
 #include <thread>
 #include <chrono>
@@ -15,12 +21,19 @@
 #include <locale.h>
 #include <sstream>
 
+#ifndef USE_FTXUI_RENDERER
+#include <ncurses.h>
+#endif
+
 MarkdownSlideRenderer::MarkdownSlideRenderer()
     : current_slide(0), show_timer(false), utf8_supported(false), current_theme(Theme::DARK)
 {
-
-    // Create ncurses renderer
+    // Create appropriate renderer based on compile-time flag
+#ifdef USE_FTXUI_RENDERER
+    renderer = std::make_unique<FTXUIRenderer>();
+#else
     renderer = std::make_unique<NCursesRenderer>();
+#endif
 
     // Set up shell selector
     shell_selector.set_renderer(renderer.get());
@@ -49,10 +62,19 @@ MarkdownSlideRenderer::MarkdownSlideRenderer()
 
     // Set UTF-8 support in both parser and renderer
     parser.set_utf8_support(utf8_supported);
+    
+    // Set UTF-8 support for the appropriate renderer type
+#ifdef USE_FTXUI_RENDERER
+    if (auto ftxui_renderer = dynamic_cast<FTXUIRenderer *>(renderer.get()))
+    {
+        ftxui_renderer->set_utf8_support(utf8_supported);
+    }
+#else
     if (auto ncurses_renderer = dynamic_cast<NCursesRenderer *>(renderer.get()))
     {
         ncurses_renderer->set_utf8_support(utf8_supported);
     }
+#endif
 }
 
 void MarkdownSlideRenderer::goto_slide()
@@ -149,7 +171,10 @@ void MarkdownSlideRenderer::run()
 
         switch (ch)
         {
+        case 261: // KEY_RIGHT (FTXUI equivalent)
+#ifndef USE_FTXUI_RENDERER
         case KEY_RIGHT:
+#endif
         case ' ':
         case 'l':
             shell_selector.exit_selection_mode();
@@ -162,8 +187,11 @@ void MarkdownSlideRenderer::run()
             }
             break;
 
+        case 260: // KEY_LEFT (FTXUI equivalent)
+#ifndef USE_FTXUI_RENDERER
         case KEY_LEFT:
         case KEY_BACKSPACE:
+#endif
             shell_selector.exit_selection_mode();
             renderer->clear_message_area();
             if (current_slide > 0)
@@ -176,7 +204,9 @@ void MarkdownSlideRenderer::run()
 
         case '\n':
         case '\r':
+#ifndef USE_FTXUI_RENDERER
         case KEY_ENTER:
+#endif
             if (shell_selector.is_active())
             {
                 execute_selected_shell_command();
@@ -187,7 +217,9 @@ void MarkdownSlideRenderer::run()
             }
             break;
 
+#ifndef USE_FTXUI_RENDERER
         case KEY_HOME:
+#endif
         case '0':
             shell_selector.exit_selection_mode();
             renderer->clear_message_area();
@@ -196,7 +228,9 @@ void MarkdownSlideRenderer::run()
             check_for_shell_commands();
             break;
 
+#ifndef USE_FTXUI_RENDERER
         case KEY_END:
+#endif
         case '$':
             shell_selector.exit_selection_mode();
             renderer->clear_message_area();
@@ -278,7 +312,12 @@ void MarkdownSlideRenderer::check_for_shell_commands()
 
 void MarkdownSlideRenderer::show_shell_command_hint()
 {
+#ifndef USE_FTXUI_RENDERER
     renderer->show_message("Shell commands detected! Press ENTER to select command", LINES - 5);
+#else
+    renderer->show_message("Shell commands detected! Press ENTER to select command", 
+                          renderer->get_screen_height() - 5);
+#endif
 }
 
 void MarkdownSlideRenderer::start_shell_command_selection()
@@ -291,11 +330,20 @@ void MarkdownSlideRenderer::start_shell_command_selection()
         std::string msg = "Use ↑↓ to select command (" +
                           std::to_string(shell_selector.get_command_count()) +
                           " available), ENTER to execute, ESC to cancel";
+#ifndef USE_FTXUI_RENDERER
         renderer->show_message(msg, LINES - 5);
+#else
+        renderer->show_message(msg, renderer->get_screen_height() - 5);
+#endif
     }
     else
     {
+#ifndef USE_FTXUI_RENDERER
         renderer->show_message("No shell commands found on this slide", LINES - 5);
+#else
+        renderer->show_message("No shell commands found on this slide", 
+                              renderer->get_screen_height() - 5);
+#endif
     }
 }
 
@@ -303,25 +351,39 @@ bool MarkdownSlideRenderer::handle_shell_selection_input(int ch)
 {
     switch (ch)
     {
+    case 259: // KEY_UP (FTXUI equivalent)
+#ifndef USE_FTXUI_RENDERER
     case KEY_UP:
+#endif
         shell_selector.navigate_up();
         // Update status message with current selection
         {
             std::string msg = "Command " + std::to_string(shell_selector.get_selected_index() + 1) +
                               " of " + std::to_string(shell_selector.get_command_count()) +
                               " selected. ENTER to execute, ESC to cancel";
+#ifndef USE_FTXUI_RENDERER
             renderer->show_message(msg, LINES - 5);
+#else
+            renderer->show_message(msg, renderer->get_screen_height() - 5);
+#endif
         }
         return true;
 
+    case 258: // KEY_DOWN (FTXUI equivalent)
+#ifndef USE_FTXUI_RENDERER
     case KEY_DOWN:
+#endif
         shell_selector.navigate_down();
         // Update status message with current selection
         {
             std::string msg = "Command " + std::to_string(shell_selector.get_selected_index() + 1) +
                               " of " + std::to_string(shell_selector.get_command_count()) +
                               " selected. ENTER to execute, ESC to cancel";
+#ifndef USE_FTXUI_RENDERER
             renderer->show_message(msg, LINES - 5);
+#else
+            renderer->show_message(msg, renderer->get_screen_height() - 5);
+#endif
         }
         return true;
 
@@ -333,7 +395,9 @@ bool MarkdownSlideRenderer::handle_shell_selection_input(int ch)
 
     case '\n':
     case '\r':
+#ifndef USE_FTXUI_RENDERER
     case KEY_ENTER:
+#endif
         execute_selected_shell_command();
         return true;
 
@@ -352,6 +416,7 @@ void MarkdownSlideRenderer::execute_selected_shell_command()
 
         // Create and show popup
         ShellPopup popup(renderer->get_screen_width(), renderer->get_screen_height());
+        popup.set_renderer(renderer.get()); // Set the renderer
         popup.show(selected->shell_command);
 
         // Refresh slide after popup closes

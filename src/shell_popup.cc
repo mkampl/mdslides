@@ -1,12 +1,17 @@
 #include "shell_popup.hh"
-#include <ncurses.h>
+#include "renderer_interface.hh"
 #include <sstream>
 #include <algorithm>
 #include <cstdio>
 #include <memory>
 #include <array>
 
+#ifndef USE_FTXUI_RENDERER
+#include <ncurses.h>
+#endif
+
 ShellPopup::ShellPopup(int screen_width, int screen_height)
+    : renderer(nullptr)
 {
     popup_width = std::min(screen_width - 4, 120);  // Max 120 chars wide
     popup_height = std::min(screen_height - 4, 30); // Max 30 lines high
@@ -16,15 +21,55 @@ ShellPopup::ShellPopup(int screen_width, int screen_height)
     is_running = false;
 }
 
+void ShellPopup::set_renderer(ISlideRenderer *r)
+{
+    renderer = r;
+}
+
 void ShellPopup::show(const std::string &cmd)
 {
     command = cmd;
+    
+#ifdef USE_FTXUI_RENDERER
+    // Simplified implementation for FTXUI
+    if (renderer) {
+        renderer->show_message("Executing: " + cmd);
+        renderer->refresh_display();
+        
+        // Execute command and show result
+        std::string output = execute_shell_command(cmd);
+        
+        // For now, just show the first few lines of output
+        std::istringstream iss(output);
+        std::string line;
+        std::string display_output;
+        int line_count = 0;
+        
+        while (std::getline(iss, line) && line_count < 10) {
+            if (!display_output.empty()) display_output += " | ";
+            display_output += line;
+            line_count++;
+        }
+        
+        if (display_output.empty()) {
+            display_output = "[No output]";
+        }
+        
+        renderer->show_message("Output: " + display_output);
+        renderer->sleep_ms(3000); // Show for 3 seconds
+        renderer->clear_message_area();
+    }
+#else
+    // Full ncurses implementation
     draw_popup_frame();
     execute_command();
     handle_input();
     clear_popup_area();
+#endif
 }
 
+#ifndef USE_FTXUI_RENDERER
+// Only compile ncurses-specific methods when using ncurses
 void ShellPopup::draw_popup_frame()
 {
     // Draw popup background
@@ -245,6 +290,7 @@ void ShellPopup::clear_popup_area()
     attroff(COLOR_PAIR(0));
     refresh();
 }
+#endif
 
 std::string ShellPopup::execute_shell_command(const std::string &command)
 {

@@ -27,7 +27,6 @@ endif()
 set(SOURCES
     src/main.cc
     src/markdown_parser.cc
-    src/ncurses_renderer.cc
     src/shell_command_selector.cc
     src/shell_popup.cc
     src/slide_element.cc
