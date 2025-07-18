@@ -13,7 +13,7 @@ A terminal-based presentation tool that renders markdown files as interactive sl
 - Slide animations (Fade-in, Slide-in, Typewriter)
 - Navigation controls
 - Progress bar and timer
-- Shell command execution within slides
+- Interactive shell command execution with popup windows
 
 ### Supported Markdown Elements
 - Headers (H1, H2, H3)
@@ -30,12 +30,13 @@ A terminal-based presentation tool that renders markdown files as interactive sl
 - CMake 3.15 or higher
 - C++17 compatible compiler
 - ncurses library
+- cmark-gfm library
 
 ### Linux (Ubuntu/Debian)
 ```bash
 # Install dependencies
 sudo apt update
-sudo apt install -y cmake build-essential libncurses-dev
+sudo apt install -y cmake build-essential libncurses-dev libcmark-gfm-dev
 
 # Clone and build
 git clone git@github.com:mkampl/mdslides.git
@@ -60,7 +61,7 @@ cmake ..
 make
 
 # Test the build
-./slides ../README.md
+./mdslides ../README.md
 ```
 
 ---
@@ -70,7 +71,7 @@ make
 ### Basic Usage
 ```bash
 # Run with markdown file
-./slides presentation.md
+./mdslides presentation.md
 ```
 
 ### Markdown Format
@@ -114,8 +115,11 @@ int main() {
 - End / '$' - Last slide
 
 ### Shell Commands
-- Enter - Execute shell commands on current slide
-- 'u' / 'd' - Scroll shell output up/down
+- Enter - Select and execute shell commands
+- ↑/↓ - Navigate between multiple shell commands on a slide
+- Escape - Cancel shell command selection
+- In popup: ↑/↓, PgUp/PgDn - Scroll output
+- In popup: Escape - Close popup window
 
 ### Display Options
 - 't' - Cycle through themes
@@ -143,16 +147,6 @@ The application automatically detects Unicode (UTF-8) support in your terminal:
 - Built-in replacement map for common characters
 - Optional external configuration file support
 
-### Character Replacements
-
-The application includes built-in fallback replacements for:
-- German Umlauts (ä→ae, ö→oe, ü→ue, ß→ss)
-- Common symbols (→→->, ←→<-, •→*)
-- French accents (é→e, è→e, ç→c, à→a)
-- Spanish characters (ñ→n, í→i, ó→o)
-- Many Unicode symbols and characters
-
-
 ---
 
 ## Themes
@@ -177,8 +171,7 @@ Use special code blocks to execute shell commands:
 ```$df -h
 ```
 
-
-Commands are executed when you press Enter on the slide.
+Commands are executed in a popup window when you press Enter. For slides with multiple shell commands, use arrow keys to select which command to execute.
 
 ### Animation Types
 - **Fade-in**: Gradual appearance effect
@@ -196,47 +189,43 @@ Commands are executed when you press Enter on the slide.
 
 ---
 
-## Troubleshooting
-
-### Common Issues
-
-#### "ncurses not found"
-```bash
-# Ubuntu/Debian
-sudo apt install libncurses-dev
-```
-
-#### Unicode Characters Not Displaying
-- The application automatically detects UTF-8 support
-- If characters appear as replacements, your terminal may not support UTF-8
-- Try using a modern terminal emulator
-- Check your LANG environment variable: `echo $LANG`
-
-#### Character Replacement Issues
-- The application uses built-in fallbacks automatically
-
----
-
 ## Development
 
 ### Project Structure
 ```
 markdown-slide-presenter/
-├── main.cpp           # Main source code
-├── CMakeLists.txt       # Build configuration
-├── README.md            # Documentation
+├── src/
+│   ├── main.cc                    # Main application entry point
+│   ├── slide_renderer.cc          # Main slide rendering logic
+│   ├── ncurses_renderer.cc        # NCurses-based terminal rendering
+│   ├── markdown_parser.cc         # Markdown parsing with cmark-gfm
+│   ├── slide_element.cc           # Slide element data structures
+│   ├── theme_config.cc            # Theme configuration
+│   ├── shell_command_selector.cc  # Shell command selection system
+│   └── shell_popup.cc             # Shell command popup window
+├── include/
+│   ├── slide_renderer.hh          # Main renderer interface
+│   ├── ncurses_renderer.hh        # NCurses renderer header
+│   ├── markdown_parser.hh         # Markdown parser header
+│   ├── slide_element.hh           # Slide element definitions
+│   ├── theme_config.hh            # Theme configuration header
+│   ├── shell_command_selector.hh  # Shell command selector header
+│   └── shell_popup.hh             # Shell popup header
+├── CMakeLists.txt                 # Build configuration
+└── README.md                      # Documentation
 ```
 ---
 
 ## Dependencies
 
-### Runtime Dependencies
-- **ncurses**: Terminal user interface library
-- **C++ Runtime**: Standard library support
+## Dependencies
 
-### Build Dependencies
-- **CMake**: Build system generator (3.15+)
-- **C++ Compiler**: GCC 7+, Clang 7+, or MSVC 2019+
+This project uses the following third-party libraries:
+
+- **[FTXUI](https://github.com/ArthurSonzogni/FTXUI)** - C++ Functional Terminal User Interface library (MIT License)
+- **[ncurses](https://invisible-island.net/ncurses/)** - Terminal UI library (MIT-style License)
+- **[cmark-gfm](https://github.com/github/cmark-gfm)** - GitHub Flavored Markdown parser (BSD-2-Clause License)
+
 
 
 ---
@@ -249,4 +238,6 @@ Contributions are welcome! Please feel free to submit pull requests or open issu
 
 ## License
 
-This project is open source. See the LICENSE for details.
+This project is licensed under the BSD-3-Clause License - see the [LICENSE](LICENSE) file for details.
+
+Third-party licenses can be found in [LICENSE-THIRD-PARTY](LICENSE-THIRD-PARTY).
