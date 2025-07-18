@@ -32,6 +32,7 @@ set(SOURCES
     src/slide_element.cc
     src/slide_renderer.cc
     src/theme_config.cc
+    src/presentation_app.cc
     ${RENDERER_SOURCES}
 )
 
