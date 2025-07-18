@@ -52,6 +52,59 @@ else()
     set(UNICODE_SUPPORT FALSE)
 endif()
 
+# Find cmark-gfm library (replace the existing cmark-gfm section)
+find_package(PkgConfig REQUIRED)
+set(CMARK_GFM_FOUND FALSE)
+
+if(PkgConfig_FOUND)
+    # Try different pkg-config names
+    pkg_check_modules(CMARK_GFM_CORE libcmark-gfm)
+    pkg_check_modules(CMARK_GFM_EXT libcmark-gfm-extensions)
+    
+    if(CMARK_GFM_CORE_FOUND AND CMARK_GFM_EXT_FOUND)
+        set(CMARK_GFM_FOUND TRUE)
+        set(CMARK_GFM_LIBRARIES ${CMARK_GFM_CORE_LIBRARIES} ${CMARK_GFM_EXT_LIBRARIES})
+        set(CMARK_GFM_INCLUDE_DIRS ${CMARK_GFM_CORE_INCLUDE_DIRS} ${CMARK_GFM_EXT_INCLUDE_DIRS})
+        list(REMOVE_DUPLICATES CMARK_GFM_INCLUDE_DIRS)
+    endif()
+endif()
+
+if(NOT CMARK_GFM_FOUND)
+    # Manual search for cmark-gfm libraries
+    find_library(CMARK_GFM_CORE_LIBRARY
+        NAMES cmark-gfm
+        PATHS /usr/lib /usr/local/lib /opt/local/lib
+        PATH_SUFFIXES ${CMAKE_LIBRARY_ARCHITECTURE}
+    )
+    
+    find_library(CMARK_GFM_EXT_LIBRARY
+        NAMES cmark-gfm-extensions
+        PATHS /usr/lib /usr/local/lib /opt/local/lib
+        PATH_SUFFIXES ${CMAKE_LIBRARY_ARCHITECTURE}
+    )
+    
+    find_path(CMARK_GFM_INCLUDE_DIR
+        NAMES cmark-gfm.h
+        PATHS /usr/include /usr/local/include /opt/local/include
+        PATH_SUFFIXES cmark-gfm
+    )
+    
+    if(CMARK_GFM_CORE_LIBRARY AND CMARK_GFM_EXT_LIBRARY AND CMARK_GFM_INCLUDE_DIR)
+        set(CMARK_GFM_FOUND TRUE)
+        set(CMARK_GFM_LIBRARIES ${CMARK_GFM_CORE_LIBRARY} ${CMARK_GFM_EXT_LIBRARY})
+        set(CMARK_GFM_INCLUDE_DIRS ${CMARK_GFM_INCLUDE_DIR})
+    endif()
+endif()
+
+if(CMARK_GFM_FOUND)
+    message(STATUS "Found cmark-gfm library: ${CMARK_GFM_LIBRARIES}")
+    message(STATUS "Found cmark-gfm includes: ${CMARK_GFM_INCLUDE_DIRS}")
+    set(MARKDOWN_PARSER_SUPPORT TRUE)
+else()
+    message(STATUS "cmark-gfm not found, using built-in parser")
+    set(MARKDOWN_PARSER_SUPPORT FALSE)
+endif()
+
 # Compiler flags
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
@@ -70,6 +123,8 @@ set(SOURCES
     src/markdown_parser.cc
     src/slide_renderer.cc
     src/ncurses_renderer.cc
+    src/shell_command_selector.cc
+    src/shell_popup.cc
 )
 
 # Create executable
@@ -79,9 +134,13 @@ add_executable(mdslides ${SOURCES})
 target_include_directories(mdslides PRIVATE include)
 
 # Link libraries
-target_link_libraries(mdslides ${CURSES_LIBRARIES})
+target_link_libraries(mdslides ${CURSES_LIBRARIES} ${CMARK_GFM_LIBRARIES})
 if(CURSES_INCLUDE_DIRS)
     target_include_directories(mdslides PRIVATE ${CURSES_INCLUDE_DIRS})
+endif()
+if(CMARK_GFM_FOUND)
+    target_include_directories(mdslides PRIVATE ${CMARK_GFM_INCLUDE_DIRS})
+    target_compile_definitions(mdslides PRIVATE CMARK_SUPPORT=1)
 endif()
 
 # Add Unicode support flag if available
@@ -105,9 +164,15 @@ elseif(APPLE)
 else()
     set(CPACK_GENERATOR "TGZ;DEB")
     if(UNICODE_SUPPORT)
-        set(CPACK_DEBIAN_PACKAGE_DEPENDS "libncursesw6 | libncursesw5")
+        set(DEBIAN_NCURSES_DEPS "libncursesw6 | libncursesw5")
     else()
-        set(CPACK_DEBIAN_PACKAGE_DEPENDS "libncurses6 | libncurses5")
+        set(DEBIAN_NCURSES_DEPS "libncurses6 | libncurses5")
+    endif()
+
+    if(CMARK_GFM_FOUND)
+        set(CPACK_DEBIAN_PACKAGE_DEPENDS "${DEBIAN_NCURSES_DEPS}, libcmark-gfm0")
+    else()
+        set(CPACK_DEBIAN_PACKAGE_DEPENDS "${DEBIAN_NCURSES_DEPS}")
     endif()
 endif()
 
