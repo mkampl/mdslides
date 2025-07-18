@@ -10,8 +10,6 @@
 #include <string>
 #include <memory>
 #include <atomic>
-#include <thread>
-#include <mutex>
 
 class FTXUIRenderer : public ISlideRenderer
 {
@@ -48,9 +46,16 @@ public:
     void set_utf8_support(bool enabled);
 
 private:
-    // FTXUI components
-    std::unique_ptr<ftxui::ScreenInteractive> screen;
-    ftxui::Component main_component;
+    // Application state
+    enum class AppState {
+        MAIN_VIEW,
+        HELP_VIEW,
+        GOTO_DIALOG
+    };
+    
+    AppState current_state;
+    bool app_running;
+    bool screen_initialized;
     
     // Rendering state
     std::vector<SlideElement> current_elements;
@@ -58,7 +63,7 @@ private:
     std::string footer_text;
     std::string message_text;
     std::string progress_bar_text;
-    bool show_help_screen;
+    std::string goto_input;
     
     // Theme management
     ThemeManager theme_manager;
@@ -67,33 +72,20 @@ private:
     // Input handling
     std::atomic<int> last_input;
     std::atomic<bool> input_ready;
-    std::atomic<bool> echo_enabled;
-    std::string input_buffer;
-    std::mutex input_mutex;
     
-    // Animation state
-    std::atomic<bool> animation_active;
-    std::thread animation_thread;
+    // FTXUI components - NOT using unique_ptr since ScreenInteractive is not moveable
+    ftxui::Component main_component;
     
     // Helper methods
+    ftxui::Element create_main_view();
+    ftxui::Element create_help_view();
+    ftxui::Element create_goto_dialog();
     ftxui::Element create_slide_content();
-    ftxui::Element create_header_element(int current_slide, int total_slides, 
-                                       const std::string &theme_name, bool show_timer, 
-                                       int minutes, int seconds, bool utf8_mode);
-    ftxui::Element create_footer_element();
-    ftxui::Element create_progress_element(int current_slide, int total_slides);
     ftxui::Element create_help_element(bool utf8_supported);
-    ftxui::Element create_message_element();
     
     ftxui::Element render_slide_element(const SlideElement &element);
-    ftxui::Color get_element_color(int color_pair);
-    ftxui::Element create_animated_element(const SlideElement &element, int animation_frame);
     
     void setup_theme_colors(Theme theme);
-    void start_animation_loop();
-    void stop_animation();
-    
-    // Input handling helpers
-    void setup_input_handler();
-    void handle_key_event(ftxui::Event &event);
+    bool handle_event(ftxui::Event event);
+    void setup_main_component();
 };
