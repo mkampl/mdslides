@@ -151,6 +151,7 @@ endif()
 # Installation
 install(TARGETS mdslides RUNTIME DESTINATION bin)
 install(FILES README.md DESTINATION share/doc/mdslides)
+install(FILES LICENSE LICENSE_3rdPARTY DESTINATION share/doc/mdslides)
 
 # Package configuration
 set(CPACK_PACKAGE_NAME "MarkdownSlidePresenter")
