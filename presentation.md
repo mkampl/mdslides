@@ -18,12 +18,15 @@
 
 ## 📂 Aktuelle Dateien
 
-🔍 Schauen wir uns an, was sich im aktuellen Verzeichnis befindet:
+### 🔍 Schauen wir uns an, was sich im aktuellen Verzeichnis befindet:
 
 ```$ls -la
 ```
 
-**💡 Hinweis:** Drücke ENTER um den Command auszuführen! ⚡
+### Testen wir einen langen Ouptut
+
+```$cat presentation.md
+```
 
 ---
 

@@ -123,6 +123,8 @@ set(SOURCES
     src/markdown_parser.cc
     src/slide_renderer.cc
     src/ncurses_renderer.cc
+    src/shell_command_selector.cc
+    src/shell_popup.cc
 )
 
 # Create executable
