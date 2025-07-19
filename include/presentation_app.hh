@@ -36,6 +36,12 @@ private:
         std::chrono::steady_clock::time_point start_time;
         Theme current_theme = Theme::DARK;
         
+        // Animation state
+        bool slide_changed = false;
+        std::chrono::steady_clock::time_point slide_start_time;
+        std::vector<bool> element_visible;  // Track which elements are visible
+        int animation_step = 0;
+        
         // UI state
         AppState app_state = AppState::MAIN_VIEW;
         std::string goto_input;
@@ -61,19 +67,74 @@ private:
         void next_slide() {
             if (current_slide < slides.get_slide_count() - 1) {
                 current_slide++;
+                start_slide_animation();
             }
         }
         
         void prev_slide() {
             if (current_slide > 0) {
                 current_slide--;
+                start_slide_animation();
             }
         }
         
         void goto_slide(int slide_num) {
             if (slide_num >= 1 && slide_num <= slides.get_slide_count()) {
                 current_slide = slide_num - 1;
+                start_slide_animation();
             }
+        }
+        
+        void start_slide_animation() {
+            slide_changed = true;
+            slide_start_time = std::chrono::steady_clock::now();
+            animation_step = 0;
+            
+            // Reset element visibility
+            const auto& current_slide_elements = get_current_slide();
+            element_visible.clear();
+            element_visible.resize(current_slide_elements.size(), false);
+        }
+        
+        void update_animation() {
+            if (!animations_enabled) {
+                // No animation - show all elements immediately
+                element_visible.assign(get_current_slide().size(), true);
+                slide_changed = false;
+                return;
+            }
+            
+            if (!slide_changed) {
+                // Animation already complete - show all elements
+                element_visible.assign(get_current_slide().size(), true);
+                return;
+            }
+            
+            auto now = std::chrono::steady_clock::now();
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - slide_start_time);
+            
+            // Animate elements appearing one by one
+            int elements_to_show = elapsed.count() / 200; // Show one element every 200ms
+            const auto& current_slide_elements = get_current_slide();
+            
+            for (int i = 0; i < static_cast<int>(current_slide_elements.size()); ++i) {
+                if (i < static_cast<int>(element_visible.size())) {
+                    element_visible[i] = (i <= elements_to_show);
+                }
+            }
+            
+            // Animation is done when all elements are visible
+            if (elements_to_show >= static_cast<int>(current_slide_elements.size()) - 1) {
+                slide_changed = false;
+                element_visible.assign(current_slide_elements.size(), true);
+            }
+        }
+        
+        bool is_element_visible(int index) const {
+            if (!animations_enabled || !slide_changed) {
+                return true;
+            }
+            return index < static_cast<int>(element_visible.size()) && element_visible[index];
         }
         
         void cycle_theme() {
@@ -113,4 +174,8 @@ private:
     void setup_components();
     void update_theme();
     std::string format_timer() const;
+    void cleanup_terminal();
+    
+    // Animation methods
+    ftxui::Element apply_animation_effect(ftxui::Element element, const SlideElement& slide_element, int index);
 };
