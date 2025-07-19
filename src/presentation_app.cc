@@ -10,11 +10,14 @@
 #include <memory>
 #include <array>
 #include <cstdlib>
+#include <thread>
+#include <atomic>
 
 using namespace ftxui;
 
 PresentationApp::PresentationApp() {
     state_.start_time = std::chrono::steady_clock::now();
+    state_.start_slide_animation(); // Initialize animation state
     setup_components();
     update_theme();
 }
@@ -34,25 +37,29 @@ void PresentationApp::run() {
     }
     
     auto screen = ScreenInteractive::Fullscreen();
-    screen.Loop(main_component_);
-}
-
-void PresentationApp::setup_components() {
-    main_component_ = Renderer([&] {
-        switch (state_.app_state) {
-            case AppState::HELP_VIEW:
-                return render_help_view();
-            case AppState::GOTO_DIALOG:
-                return render_goto_dialog();
-            case AppState::SHELL_EXECUTION:
-                return render_shell_confirmation();
-            case AppState::MAIN_VIEW:
-            default:
-                return render_main_view();
+    
+    // Start a background thread for animation updates
+    std::atomic<bool> keep_running{true};
+    std::thread animation_thread([&]() {
+        while (keep_running) {
+            if (state_.slide_changed && state_.animations_enabled) {
+                // Force a screen refresh during animations
+                screen.PostEvent(Event::Custom);
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            } else {
+                // Longer sleep when no animation
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
         }
     });
     
-    main_component_ = CatchEvent(main_component_, [&](Event event) {
+    // Create main component with custom event handling
+    auto app_component = CatchEvent(main_component_, [&](Event event) {
+        if (event == Event::Custom) {
+            // Custom event for animation refresh - just trigger re-render
+            return true;
+        }
+        
         switch (state_.app_state) {
             case AppState::HELP_VIEW:
                 return handle_help_view_event(event);
@@ -65,6 +72,40 @@ void PresentationApp::setup_components() {
                 return handle_main_view_event(event);
         }
     });
+    
+    try {
+        screen.Loop(app_component);
+    } catch (...) {
+        // Ensure cleanup happens even if there's an exception
+    }
+    
+    // Stop animation thread and cleanup
+    keep_running = false;
+    if (animation_thread.joinable()) {
+        animation_thread.join();
+    }
+    
+    // Force terminal cleanup
+    cleanup_terminal();
+}
+
+void PresentationApp::setup_components() {
+    main_component_ = Renderer([&] {
+        // Update animations on every render
+        state_.update_animation();
+        
+        switch (state_.app_state) {
+            case AppState::HELP_VIEW:
+                return render_help_view();
+            case AppState::GOTO_DIALOG:
+                return render_goto_dialog();
+            case AppState::SHELL_EXECUTION:
+                return render_shell_confirmation();
+            case AppState::MAIN_VIEW:
+            default:
+                return render_main_view();
+        }
+    });
 }
 
 bool PresentationApp::handle_main_view_event(Event event) {
@@ -74,6 +115,7 @@ bool PresentationApp::handle_main_view_event(Event event) {
         switch (c) {
             case 'q':
             case 'Q':
+                cleanup_terminal();
                 exit(0);
                 return true;
                 
@@ -142,6 +184,7 @@ bool PresentationApp::handle_main_view_event(Event event) {
         state_.prev_slide();
         return true;
     } else if (event == Event::Escape) {
+        cleanup_terminal();
         exit(0);
         return true;
     }
@@ -293,22 +336,33 @@ Element PresentationApp::render_shell_confirmation() {
 Element PresentationApp::render_slide_content() {
     std::vector<Element> slide_content;
     
-    for (const auto& element : state_.get_current_slide()) {
+    const auto& current_slide_elements = state_.get_current_slide();
+    for (int i = 0; i < static_cast<int>(current_slide_elements.size()); ++i) {
+        const auto& element = current_slide_elements[i];
+        
         if (element.type != ElementType::SHELL_OUTPUT) {
-            Element rendered = render_slide_element(element);
-            
-            int indent = std::max(0, element.x - 2);
-            if (indent > 0) {
-                std::string spaces(indent, ' ');
-                rendered = hbox({text(spaces), rendered});
-            }
-            
-            slide_content.push_back(rendered);
-            
-            if (element.type == ElementType::HEADER1 || 
-                element.type == ElementType::HEADER2 || 
-                element.type == ElementType::HEADER3) {
-                slide_content.push_back(text(""));
+            // Only show element if it's visible (for animations)
+            if (state_.is_element_visible(i)) {
+                Element rendered = render_slide_element(element);
+                
+                // Apply animation effects
+                if (state_.animations_enabled && state_.slide_changed) {
+                    rendered = apply_animation_effect(rendered, element, i);
+                }
+                
+                int indent = std::max(0, element.x - 2);
+                if (indent > 0) {
+                    std::string spaces(indent, ' ');
+                    rendered = hbox({text(spaces), rendered});
+                }
+                
+                slide_content.push_back(rendered);
+                
+                if (element.type == ElementType::HEADER1 || 
+                    element.type == ElementType::HEADER2 || 
+                    element.type == ElementType::HEADER3) {
+                    slide_content.push_back(text(""));
+                }
             }
         }
     }
@@ -435,6 +489,19 @@ void PresentationApp::update_theme() {
     theme_manager_.setup_theme(state_.current_theme);
 }
 
+void PresentationApp::cleanup_terminal() {
+    // Reset terminal to normal state
+    printf("\033[?25h");     // Show cursor
+    printf("\033[0m");       // Reset all attributes
+    printf("\033[2J");       // Clear screen
+    printf("\033[H");        // Move cursor to home
+    printf("\033[?1049l");   // Exit alternate screen buffer
+    printf("\033[?1000l");   // Disable mouse reporting
+    printf("\033[?1002l");   // Disable mouse tracking
+    printf("\033[?1003l");   // Disable all mouse events
+    fflush(stdout);
+}
+
 std::string PresentationApp::format_timer() const {
     int elapsed = state_.get_elapsed_seconds();
     int minutes = elapsed / 60;
@@ -444,4 +511,36 @@ std::string PresentationApp::format_timer() const {
     oss << std::setfill('0') << std::setw(2) << minutes 
         << ":" << std::setw(2) << seconds;
     return oss.str();
+}
+
+Element PresentationApp::apply_animation_effect(Element element, const SlideElement& /* slide_element */, int index) {
+    if (!state_.animations_enabled || !state_.slide_changed) {
+        return element; // No animation
+    }
+    
+    auto now = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - state_.slide_start_time);
+    
+    // Simple staggered fade-in animation
+    int element_delay = index * 150; // 150ms delay between elements
+    
+    if (elapsed.count() < element_delay) {
+        return text(""); // Not yet visible
+    }
+    
+    int element_elapsed = elapsed.count() - element_delay;
+    if (element_elapsed < 200) {
+        // Simple "appear" animation - just show with dim effect
+        return element | dim;
+    }
+    
+    // Animation complete - mark as done after all elements are shown
+    if (elapsed.count() > (index + 1) * 150 + 200) {
+        // Check if this is the last element
+        if (index >= static_cast<int>(state_.get_current_slide().size()) - 1) {
+            state_.slide_changed = false; // Animation complete
+        }
+    }
+    
+    return element; // Fully visible
 }
