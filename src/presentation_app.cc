@@ -109,6 +109,31 @@ void PresentationApp::setup_components() {
 }
 
 bool PresentationApp::handle_main_view_event(Event event) {
+    // Handle shell selection first if active
+    if (state_.shell_selection_active) {
+        if (event == Event::ArrowUp) {
+            state_.navigate_shell_up();
+            return true;
+        } else if (event == Event::ArrowDown) {
+            state_.navigate_shell_down();
+            return true;
+        } else if (event == Event::Escape) {
+            state_.exit_shell_selection();
+            state_.status_message = "";
+            return true;
+        } else if (event == Event::Return) {
+                std::string command = state_.get_selected_shell_command();
+                if (!command.empty())
+                {
+                    state_.pending_shell_command = command;
+                    state_.app_state = AppState::SHELL_EXECUTION;
+                    state_.exit_shell_selection();
+                }
+            return true;
+        }
+        return false; // Let other events through during selection
+    }
+    
     if (event.is_character()) {
         char c = event.character()[0];
         
@@ -160,21 +185,25 @@ bool PresentationApp::handle_main_view_event(Event event) {
                 
             case '0':
                 state_.current_slide = 0;
+                state_.start_slide_animation();
                 return true;
                 
             case '$':
                 state_.current_slide = state_.slides.get_slide_count() - 1;
+                state_.start_slide_animation();
                 return true;
                 
-            case '\n':
-            case '\r':
-                for (const auto& element : state_.get_current_slide()) {
-                    if (element.type == ElementType::SHELL_COMMAND) {
-                        state_.pending_shell_command = element.shell_command;
-                        state_.app_state = AppState::SHELL_EXECUTION;
-                        return true;
-                    }
-                }
+                
+            case 'u':
+            case 'U':
+                // Scroll shell output up (placeholder for now)
+                state_.status_message = "Scroll up";
+                return true;
+                
+            case 'd':
+            case 'D':
+                // Scroll shell output down (placeholder for now)  
+                state_.status_message = "Scroll down";
                 return true;
         }
     } else if (event == Event::ArrowRight || event == Event::ArrowDown) {
@@ -188,6 +217,16 @@ bool PresentationApp::handle_main_view_event(Event event) {
         exit(0);
         return true;
     }
+    else if (event == Event::Return) {
+        // Check for shell commands and start selection
+        if (!state_.shell_command_indices.empty()) {
+           state_.start_shell_selection();
+           state_.status_message = "Shell command selection active. Use ↑↓ to select, Enter to execute, Escape to cancel.";
+       } else {
+           state_.status_message = "No shell commands on this slide";
+       }
+       return true;
+   }
     
     return false;
 }
@@ -343,11 +382,21 @@ Element PresentationApp::render_slide_content() {
         if (element.type != ElementType::SHELL_OUTPUT) {
             // Only show element if it's visible (for animations)
             if (state_.is_element_visible(i)) {
-                Element rendered = render_slide_element(element);
+                Element rendered;
+                
+                // Special handling for shell commands to show selection
+                if (element.type == ElementType::SHELL_COMMAND) {
+                    rendered = render_shell_element_with_selection(element, i);
+                } else {
+                    rendered = render_slide_element(element);
+                }
                 
                 // Apply animation effects
                 if (state_.animations_enabled && state_.slide_changed) {
-                    rendered = apply_animation_effect(rendered, element, i);
+                    // For shell commands, only apply animation if not in selection mode
+                    if (element.type != ElementType::SHELL_COMMAND || !state_.shell_selection_active) {
+                        rendered = apply_animation_effect(rendered, element, i);
+                    }
                 }
                 
                 int indent = std::max(0, element.x - 2);
@@ -409,6 +458,27 @@ Element PresentationApp::render_slide_element(const SlideElement& element) {
     return content;
 }
 
+Element PresentationApp::render_shell_element_with_selection(const SlideElement& element, int element_index) {
+    Element content = text(element.content);
+    content = content | color(Color::Magenta) | bold;
+    
+    // Check if this shell command is selected
+    if (state_.shell_selection_active && state_.get_selected_shell_index() == element_index) {
+        // Highlight selected command
+        content = content | bgcolor(Color::Blue) | color(Color::White);
+        
+        // Add selection indicators
+        Element selection_indicator = hbox({
+            text("→ ") | color(Color::Yellow) | bold,
+            content,
+            text(" ←") | color(Color::Yellow) | bold
+        });
+        return selection_indicator;
+    }
+    
+    return content;
+}
+
 Element PresentationApp::render_header() {
     std::string slide_info = "Slide " + std::to_string(state_.current_slide + 1) + 
                             "/" + std::to_string(state_.slides.get_slide_count());
@@ -461,6 +531,29 @@ Element PresentationApp::render_progress_bar() {
 void PresentationApp::execute_shell_command(const std::string& command) {
     std::string output = run_shell_command(command);
     state_.status_message = "Command executed: " + command;
+    
+    // Store output in the corresponding slide element for future display
+    if (!state_.shell_command_indices.empty() && state_.selected_shell_command < static_cast<int>(state_.shell_command_indices.size())) {
+        int element_index = state_.shell_command_indices[state_.selected_shell_command];
+        auto& current_slide_elements = const_cast<std::vector<SlideElement>&>(state_.get_current_slide());
+        
+        if (element_index < static_cast<int>(current_slide_elements.size())) {
+            current_slide_elements[element_index].executed = true;
+            
+            // Split output into lines
+            std::istringstream iss(output);
+            std::string line;
+            current_slide_elements[element_index].shell_output_lines.clear();
+            
+            while (std::getline(iss, line)) {
+                current_slide_elements[element_index].shell_output_lines.push_back(line);
+            }
+            
+            if (current_slide_elements[element_index].shell_output_lines.empty()) {
+                current_slide_elements[element_index].shell_output_lines.push_back("[No output]");
+            }
+        }
+    }
 }
 
 std::string PresentationApp::run_shell_command(const std::string& command) {

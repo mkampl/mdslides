@@ -42,6 +42,11 @@ private:
         std::vector<bool> element_visible;  // Track which elements are visible
         int animation_step = 0;
         
+        // Shell command selection state
+        bool shell_selection_active = false;
+        int selected_shell_command = 0;
+        std::vector<int> shell_command_indices; // Indices of shell commands on current slide
+        
         // UI state
         AppState app_state = AppState::MAIN_VIEW;
         std::string goto_input;
@@ -94,6 +99,75 @@ private:
             const auto& current_slide_elements = get_current_slide();
             element_visible.clear();
             element_visible.resize(current_slide_elements.size(), false);
+            
+            // Reset shell command selection
+            shell_selection_active = false;
+            selected_shell_command = 0;
+            update_shell_commands();
+        }
+        
+        void update_shell_commands() {
+            shell_command_indices.clear();
+            const auto& current_slide_elements = get_current_slide();
+            
+            for (int i = 0; i < static_cast<int>(current_slide_elements.size()); ++i) {
+                if (current_slide_elements[i].type == ElementType::SHELL_COMMAND) {
+                    shell_command_indices.push_back(i);
+                }
+            }
+            
+            // Reset selection if no commands or selection out of range
+            if (shell_command_indices.empty() || selected_shell_command >= static_cast<int>(shell_command_indices.size())) {
+                selected_shell_command = 0;
+            }
+        }
+        
+        void start_shell_selection() {
+            if (!shell_command_indices.empty()) {
+                shell_selection_active = true;
+                selected_shell_command = 0;
+            }
+        }
+        
+        void exit_shell_selection() {
+            shell_selection_active = false;
+            selected_shell_command = 0;
+        }
+        
+        bool navigate_shell_up() {
+            if (shell_selection_active && selected_shell_command > 0) {
+                selected_shell_command--;
+                return true;
+            }
+            return false;
+        }
+        
+        bool navigate_shell_down() {
+            if (shell_selection_active && selected_shell_command < static_cast<int>(shell_command_indices.size()) - 1) {
+                selected_shell_command++;
+                return true;
+            }
+            return false;
+        }
+        
+        std::string get_selected_shell_command() const {
+            if (shell_selection_active && !shell_command_indices.empty() && 
+                selected_shell_command >= 0 && selected_shell_command < static_cast<int>(shell_command_indices.size())) {
+                int element_index = shell_command_indices[selected_shell_command];
+                const auto& current_slide_elements = get_current_slide();
+                if (element_index < static_cast<int>(current_slide_elements.size())) {
+                    return current_slide_elements[element_index].shell_command;
+                }
+            }
+            return "";
+        }
+        
+        int get_selected_shell_index() const {
+            if (shell_selection_active && !shell_command_indices.empty() && 
+                selected_shell_command >= 0 && selected_shell_command < static_cast<int>(shell_command_indices.size())) {
+                return shell_command_indices[selected_shell_command];
+            }
+            return -1;
         }
         
         void update_animation() {
@@ -200,6 +274,7 @@ private:
     
     ftxui::Element render_slide_content();
     ftxui::Element render_slide_element(const SlideElement& element);
+    ftxui::Element render_shell_element_with_selection(const SlideElement& element, int element_index);
     ftxui::Element render_header();
     ftxui::Element render_footer();
     ftxui::Element render_progress_bar();
