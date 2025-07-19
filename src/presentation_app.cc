@@ -522,10 +522,10 @@ Element PresentationApp::apply_animation_effect(Element element, const SlideElem
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - state_.slide_start_time);
     
     // TIMING CONFIGURATION
-    const int TYPEWRITER_DURATION = 800;   // ms for typewriter animation
+    const int TYPEWRITER_DURATION = 1200;   // ms for typewriter animation
     const int SLIDE_DURATION = 600;         // ms for slide-in animation  
     const int FADE_DURATION = 400;          // ms for fade animation
-    const int TYPEWRITER_CHAR_DELAY = 20;   // ms per character in typewriter
+    const int TYPEWRITER_CHAR_DELAY = 40;   // ms per character in typewriter
     const int GAP_BETWEEN_ELEMENTS = 200;   // ms gap between animations
     
     // Calculate when THIS element should start (cumulative timing)
@@ -533,11 +533,19 @@ Element PresentationApp::apply_animation_effect(Element element, const SlideElem
     const auto& current_slide_elements = state_.get_current_slide();
     
     for (int i = 0; i < index && i < static_cast<int>(current_slide_elements.size()); ++i) {
+        // Check if this element and the next are both code elements (same code block)
+        bool is_code_block = (current_slide_elements[i].type == ElementType::CODE_BLOCK || 
+                             current_slide_elements[i].type == ElementType::SHELL_COMMAND);
+        bool next_is_code = (i + 1 < static_cast<int>(current_slide_elements.size()) && 
+                           (current_slide_elements[i + 1].type == ElementType::CODE_BLOCK || 
+                            current_slide_elements[i + 1].type == ElementType::SHELL_COMMAND));
+        
         // Add duration of previous element
         switch (current_slide_elements[i].type) {
             case ElementType::CODE_BLOCK:
             case ElementType::SHELL_COMMAND:
-                element_start_time += TYPEWRITER_DURATION;
+                // For code: only add character typing time, not full duration
+                element_start_time += static_cast<int>(current_slide_elements[i].content.length()) * TYPEWRITER_CHAR_DELAY;
                 break;
             case ElementType::HEADER1:
             case ElementType::HEADER2:
@@ -548,7 +556,14 @@ Element PresentationApp::apply_animation_effect(Element element, const SlideElem
                 element_start_time += FADE_DURATION;
                 break;
         }
-        element_start_time += GAP_BETWEEN_ELEMENTS; // Gap between elements
+        
+        // Add gap only if this is NOT followed by another code element
+        if (!(is_code_block && next_is_code)) {
+            element_start_time += GAP_BETWEEN_ELEMENTS;
+        } else {
+            // Between code lines: only add a line break time (much shorter)
+            element_start_time += 100; // 100ms for line break
+        }
     }
     
     if (elapsed.count() < element_start_time) {
@@ -582,32 +597,39 @@ Element PresentationApp::apply_animation_effect(Element element, const SlideElem
             
         case ElementType::CODE_BLOCK:
         case ElementType::SHELL_COMMAND:
-            // Typewriter effect for code
-            if (element_elapsed < TYPEWRITER_DURATION) {
-                int chars_to_show = element_elapsed / TYPEWRITER_CHAR_DELAY;
-                
-                if (chars_to_show >= static_cast<int>(slide_element.content.length())) {
-                    return element; // Fully typed
+            // Typewriter effect for code - duration based on actual content length
+            {
+                int actual_duration = static_cast<int>(slide_element.content.length()) * TYPEWRITER_CHAR_DELAY;
+                if (element_elapsed < actual_duration) {
+                    int chars_to_show = element_elapsed / TYPEWRITER_CHAR_DELAY;
+                    
+                    if (chars_to_show >= static_cast<int>(slide_element.content.length())) {
+                        return element; // Fully typed
+                    }
+                    
+                    std::string partial = slide_element.content.substr(0, chars_to_show);
+                    
+                    // Blinking cursor effect - only show on the last line of a code block
+                    bool is_last_code_line = (index + 1 >= static_cast<int>(current_slide_elements.size()) ||
+                                            (current_slide_elements[index + 1].type != ElementType::CODE_BLOCK &&
+                                             current_slide_elements[index + 1].type != ElementType::SHELL_COMMAND));
+                    
+                    bool show_cursor = is_last_code_line && (elapsed.count() / 400) % 2; // Blink every 400ms
+                    if (show_cursor && chars_to_show < static_cast<int>(slide_element.content.length())) {
+                        partial += "_";
+                    }
+                    
+                    Element result = text(partial);
+                    // Apply same styling as original
+                    if (slide_element.type == ElementType::SHELL_COMMAND) {
+                        result = result | color(Color::Magenta) | bold;
+                    } else {
+                        result = result | color(Color::Magenta);
+                    }
+                    return result;
                 }
-                
-                std::string partial = slide_element.content.substr(0, chars_to_show);
-                
-                // Blinking cursor effect
-                bool show_cursor = (elapsed.count() / 400) % 2; // Blink every 400ms
-                if (show_cursor && chars_to_show < static_cast<int>(slide_element.content.length())) {
-                    partial += "_";
-                }
-                
-                Element result = text(partial);
-                // Apply same styling as original
-                if (slide_element.type == ElementType::SHELL_COMMAND) {
-                    result = result | color(Color::Magenta) | bold;
-                } else {
-                    result = result | color(Color::Magenta);
-                }
-                return result;
+                return element;
             }
-            return element;
             
         default:
             // Fade-in effect for text and bullets

@@ -126,12 +126,20 @@ private:
                 // Element becomes visible when its start time is reached
                 element_visible[i] = (elapsed.count() >= current_time);
                 
+                // Check if this element and the next are both code elements
+                bool is_code_block = (current_slide_elements[i].type == ElementType::CODE_BLOCK || 
+                                     current_slide_elements[i].type == ElementType::SHELL_COMMAND);
+                bool next_is_code = (i + 1 < static_cast<int>(current_slide_elements.size()) && 
+                                   (current_slide_elements[i + 1].type == ElementType::CODE_BLOCK || 
+                                    current_slide_elements[i + 1].type == ElementType::SHELL_COMMAND));
+                
                 // Calculate duration for this element type
                 int element_duration;
                 switch (current_slide_elements[i].type) {
                     case ElementType::CODE_BLOCK:
                     case ElementType::SHELL_COMMAND:
-                        element_duration = 1200; // Typewriter duration
+                        // Duration based on actual content length for code
+                        element_duration = static_cast<int>(current_slide_elements[i].content.length()) * 40; // 40ms per char
                         break;
                     case ElementType::HEADER1:
                     case ElementType::HEADER2:
@@ -143,8 +151,14 @@ private:
                         break;
                 }
                 
-                // Next element starts after this one finishes + small gap
-                current_time += element_duration + 200; // 200ms gap between animations
+                current_time += element_duration;
+                
+                // Add gap - smaller gap between code lines, normal gap otherwise
+                if (is_code_block && next_is_code) {
+                    current_time += 100; // Small gap between code lines
+                } else {
+                    current_time += 200; // Normal gap between elements
+                }
             }
             
             // Animation is done when all elements are complete
