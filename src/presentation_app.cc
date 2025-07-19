@@ -45,10 +45,10 @@ void PresentationApp::run() {
             if (state_.slide_changed && state_.animations_enabled) {
                 // Force a screen refresh during animations
                 screen.PostEvent(Event::Custom);
-                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                std::this_thread::sleep_for(std::chrono::milliseconds(30)); // Faster refresh for smooth animation
             } else {
                 // Longer sleep when no animation
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
             }
         }
     });
@@ -513,7 +513,7 @@ std::string PresentationApp::format_timer() const {
     return oss.str();
 }
 
-Element PresentationApp::apply_animation_effect(Element element, const SlideElement& /* slide_element */, int index) {
+Element PresentationApp::apply_animation_effect(Element element, const SlideElement& slide_element, int index) {
     if (!state_.animations_enabled || !state_.slide_changed) {
         return element; // No animation
     }
@@ -521,26 +521,107 @@ Element PresentationApp::apply_animation_effect(Element element, const SlideElem
     auto now = std::chrono::steady_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - state_.slide_start_time);
     
-    // Simple staggered fade-in animation
-    int element_delay = index * 150; // 150ms delay between elements
+    // TIMING CONFIGURATION
+    const int TYPEWRITER_DURATION = 800;   // ms for typewriter animation
+    const int SLIDE_DURATION = 600;         // ms for slide-in animation  
+    const int FADE_DURATION = 400;          // ms for fade animation
+    const int TYPEWRITER_CHAR_DELAY = 20;   // ms per character in typewriter
+    const int GAP_BETWEEN_ELEMENTS = 200;   // ms gap between animations
     
-    if (elapsed.count() < element_delay) {
-        return text(""); // Not yet visible
-    }
+    // Calculate when THIS element should start (cumulative timing)
+    int element_start_time = 0;
+    const auto& current_slide_elements = state_.get_current_slide();
     
-    int element_elapsed = elapsed.count() - element_delay;
-    if (element_elapsed < 200) {
-        // Simple "appear" animation - just show with dim effect
-        return element | dim;
-    }
-    
-    // Animation complete - mark as done after all elements are shown
-    if (elapsed.count() > (index + 1) * 150 + 200) {
-        // Check if this is the last element
-        if (index >= static_cast<int>(state_.get_current_slide().size()) - 1) {
-            state_.slide_changed = false; // Animation complete
+    for (int i = 0; i < index && i < static_cast<int>(current_slide_elements.size()); ++i) {
+        // Add duration of previous element
+        switch (current_slide_elements[i].type) {
+            case ElementType::CODE_BLOCK:
+            case ElementType::SHELL_COMMAND:
+                element_start_time += TYPEWRITER_DURATION;
+                break;
+            case ElementType::HEADER1:
+            case ElementType::HEADER2:
+            case ElementType::HEADER3:
+                element_start_time += SLIDE_DURATION;
+                break;
+            default:
+                element_start_time += FADE_DURATION;
+                break;
         }
+        element_start_time += GAP_BETWEEN_ELEMENTS; // Gap between elements
     }
     
-    return element; // Fully visible
+    if (elapsed.count() < element_start_time) {
+        return text(""); // Not yet time for this element
+    }
+    
+    int element_elapsed = elapsed.count() - element_start_time;
+    
+    // Different animation effects based on element type
+    switch (slide_element.type) {
+        case ElementType::HEADER1:
+        case ElementType::HEADER2:
+        case ElementType::HEADER3:
+            // Slide-in effect for headers
+            if (element_elapsed < SLIDE_DURATION) {
+                float progress = static_cast<float>(element_elapsed) / SLIDE_DURATION;
+                // Ease-out function for smoother animation
+                progress = 1.0f - (1.0f - progress) * (1.0f - progress);
+                
+                int offset = static_cast<int>((1.0f - progress) * 20); // Slide from right
+                std::string spaces(offset, ' ');
+                
+                // Add dim effect in first half
+                if (element_elapsed < SLIDE_DURATION / 2) {
+                    return hbox({text(spaces), element | dim});
+                } else {
+                    return hbox({text(spaces), element});
+                }
+            }
+            return element;
+            
+        case ElementType::CODE_BLOCK:
+        case ElementType::SHELL_COMMAND:
+            // Typewriter effect for code
+            if (element_elapsed < TYPEWRITER_DURATION) {
+                int chars_to_show = element_elapsed / TYPEWRITER_CHAR_DELAY;
+                
+                if (chars_to_show >= static_cast<int>(slide_element.content.length())) {
+                    return element; // Fully typed
+                }
+                
+                std::string partial = slide_element.content.substr(0, chars_to_show);
+                
+                // Blinking cursor effect
+                bool show_cursor = (elapsed.count() / 400) % 2; // Blink every 400ms
+                if (show_cursor && chars_to_show < static_cast<int>(slide_element.content.length())) {
+                    partial += "_";
+                }
+                
+                Element result = text(partial);
+                // Apply same styling as original
+                if (slide_element.type == ElementType::SHELL_COMMAND) {
+                    result = result | color(Color::Magenta) | bold;
+                } else {
+                    result = result | color(Color::Magenta);
+                }
+                return result;
+            }
+            return element;
+            
+        default:
+            // Fade-in effect for text and bullets
+            if (element_elapsed < FADE_DURATION) {
+                if (element_elapsed < FADE_DURATION / 4) {
+                    return text(""); // Invisible
+                } else if (element_elapsed < FADE_DURATION / 2) {
+                    return element | dim; // Dim appearance
+                } else if (element_elapsed < FADE_DURATION * 3 / 4) {
+                    return element; // Normal brightness
+                } else {
+                    return element | dim; // Brief dim again
+                }
+            }
+            return element; // Fully visible
+    }
 }

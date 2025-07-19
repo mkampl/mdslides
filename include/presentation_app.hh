@@ -113,18 +113,42 @@ private:
             auto now = std::chrono::steady_clock::now();
             auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - slide_start_time);
             
-            // Animate elements appearing one by one
-            int elements_to_show = elapsed.count() / 200; // Show one element every 200ms
             const auto& current_slide_elements = get_current_slide();
             
-            for (int i = 0; i < static_cast<int>(current_slide_elements.size()); ++i) {
-                if (i < static_cast<int>(element_visible.size())) {
-                    element_visible[i] = (i <= elements_to_show);
-                }
+            // Ensure element_visible has correct size
+            if (element_visible.size() != current_slide_elements.size()) {
+                element_visible.resize(current_slide_elements.size(), false);
             }
             
-            // Animation is done when all elements are visible
-            if (elements_to_show >= static_cast<int>(current_slide_elements.size()) - 1) {
+            // Calculate when each element should start based on when previous finishes
+            int current_time = 0;
+            for (int i = 0; i < static_cast<int>(current_slide_elements.size()); ++i) {
+                // Element becomes visible when its start time is reached
+                element_visible[i] = (elapsed.count() >= current_time);
+                
+                // Calculate duration for this element type
+                int element_duration;
+                switch (current_slide_elements[i].type) {
+                    case ElementType::CODE_BLOCK:
+                    case ElementType::SHELL_COMMAND:
+                        element_duration = 1200; // Typewriter duration
+                        break;
+                    case ElementType::HEADER1:
+                    case ElementType::HEADER2:
+                    case ElementType::HEADER3:
+                        element_duration = 600; // Slide duration
+                        break;
+                    default:
+                        element_duration = 400; // Fade duration
+                        break;
+                }
+                
+                // Next element starts after this one finishes + small gap
+                current_time += element_duration + 200; // 200ms gap between animations
+            }
+            
+            // Animation is done when all elements are complete
+            if (elapsed.count() >= current_time) {
                 slide_changed = false;
                 element_visible.assign(current_slide_elements.size(), true);
             }
