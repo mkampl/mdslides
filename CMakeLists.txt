@@ -27,9 +27,8 @@ endif()
 set(SOURCES
     src/main.cc
     src/markdown_parser.cc
-    src/shell_command_selector.cc
+    src/slide_element.cc 
     src/shell_popup.cc
-    src/slide_element.cc
     src/theme_config.cc
     ${RENDERER_SOURCES}
 )

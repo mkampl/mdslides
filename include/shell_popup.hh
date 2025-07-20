@@ -37,9 +37,7 @@ private:
     
     void show_ftxui_popup();
     ftxui::Element render_popup_content(bool execution_complete);
-#endif
-
-#ifndef USE_FTXUI_RENDERER
+#else
     // NCurses-specific methods
     void draw_popup_frame();
     void execute_command();
