@@ -18,6 +18,7 @@ using namespace ftxui;
 PresentationApp::PresentationApp() {
     state_.start_time = std::chrono::steady_clock::now();
     state_.start_slide_animation(); // Initialize animation state
+    shell_popup_ = std::make_unique<ShellPopup>(80, 24);
     setup_components();
     update_theme();
 }
@@ -67,6 +68,8 @@ void PresentationApp::run() {
                 return handle_goto_dialog_event(event);
             case AppState::SHELL_EXECUTION:
                 return handle_shell_confirmation_event(event);
+            case AppState::SHELL_POPUP:
+                return handle_shell_popup_event(event);
             case AppState::MAIN_VIEW:
             default:
                 return handle_main_view_event(event);
@@ -87,6 +90,16 @@ void PresentationApp::run() {
     
     // Force terminal cleanup
     cleanup_terminal();
+}
+
+bool PresentationApp::handle_shell_popup_event(Event event) {
+    // The shell popup handles its own events, but you might want to 
+    // check if it's still running and transition back to main view
+    if (!shell_popup_ || !shell_popup_->get_is_running()) {
+        state_.app_state = AppState::MAIN_VIEW;
+        return true;
+    }
+    return false;
 }
 
 void PresentationApp::setup_components() {
@@ -265,7 +278,10 @@ bool PresentationApp::handle_shell_confirmation_event(Event event) {
     if (event.is_character()) {
         char c = event.character()[0];
         if (c == 'y' || c == 'Y') {
+            // Execute the shell command (this will show the popup and block until closed)
             execute_shell_command(state_.pending_shell_command);
+            
+            // After popup is closed, return to main view
             state_.app_state = AppState::MAIN_VIEW;
             return true;
         } else if (c == 'n' || c == 'N') {
@@ -529,31 +545,26 @@ Element PresentationApp::render_progress_bar() {
 }
 
 void PresentationApp::execute_shell_command(const std::string& command) {
-    std::string output = run_shell_command(command);
+    // Get current terminal size for proper popup sizing
+    auto screen = ScreenInteractive::Fullscreen();
+    int width = 80;  // Default fallback
+    int height = 24; // Default fallback
+    
+    // Try to get actual terminal size (FTXUI doesn't expose this directly)
+    // You might need to add a method to get screen dimensions
+    
+    // Create a new popup with current screen size
+    shell_popup_ = std::make_unique<ShellPopup>(width, height);
+    
+    // Show the popup (this will block until user closes it)
+    shell_popup_->show(command);
+    
+    // Update status message
     state_.status_message = "Command executed: " + command;
     
-    // Store output in the corresponding slide element for future display
-    if (!state_.shell_command_indices.empty() && state_.selected_shell_command < static_cast<int>(state_.shell_command_indices.size())) {
-        int element_index = state_.shell_command_indices[state_.selected_shell_command];
-        auto& current_slide_elements = const_cast<std::vector<SlideElement>&>(state_.get_current_slide());
-        
-        if (element_index < static_cast<int>(current_slide_elements.size())) {
-            current_slide_elements[element_index].executed = true;
-            
-            // Split output into lines
-            std::istringstream iss(output);
-            std::string line;
-            current_slide_elements[element_index].shell_output_lines.clear();
-            
-            while (std::getline(iss, line)) {
-                current_slide_elements[element_index].shell_output_lines.push_back(line);
-            }
-            
-            if (current_slide_elements[element_index].shell_output_lines.empty()) {
-                current_slide_elements[element_index].shell_output_lines.push_back("[No output]");
-            }
-        }
-    }
+    // The popup handles its own execution and display, so we don't need to 
+    // store output in slide elements for the FTXUI version
+    // (unless you want to implement that feature as well)
 }
 
 std::string PresentationApp::run_shell_command(const std::string& command) {
