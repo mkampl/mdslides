@@ -9,7 +9,7 @@ class ShellCommandSelector
 {
 private:
     std::vector<SlideElement *> shell_commands;
-    int selected_index;
+    size_t selected_index;
     bool selection_mode;
     ISlideRenderer *renderer;
 
@@ -31,4 +31,7 @@ private:
     void update_selection_display();
     void clear_all_highlights();
     void highlight_command(int index, bool highlight);
+    #ifndef USE_FTXUI_RENDERER
+    void redraw_shell_commands();  // Add this for ncurses
+#endif
 };

@@ -37,7 +37,14 @@ void NCursesRenderer::initialize()
 
 void NCursesRenderer::cleanup()
 {
-    endwin();
+   // Make sure we restore terminal state properly
+   if (stdscr != nullptr) {
+    echo();              // Re-enable echo
+    nocbreak();          // Disable cbreak mode  
+    keypad(stdscr, FALSE); // Disable keypad
+    curs_set(1);         // Show cursor
+    endwin();            // End ncurses mode
+}
 }
 
 void NCursesRenderer::render_slide(const std::vector<SlideElement> &elements, bool animated)

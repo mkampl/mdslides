@@ -172,9 +172,6 @@ void MarkdownSlideRenderer::run()
         switch (ch)
         {
         case 261: // KEY_RIGHT (FTXUI equivalent)
-#ifndef USE_FTXUI_RENDERER
-        case KEY_RIGHT:
-#endif
         case ' ':
         case 'l':
             shell_selector.exit_selection_mode();
@@ -189,7 +186,6 @@ void MarkdownSlideRenderer::run()
 
         case 260: // KEY_LEFT (FTXUI equivalent)
 #ifndef USE_FTXUI_RENDERER
-        case KEY_LEFT:
         case KEY_BACKSPACE:
 #endif
             shell_selector.exit_selection_mode();
@@ -352,9 +348,6 @@ bool MarkdownSlideRenderer::handle_shell_selection_input(int ch)
     switch (ch)
     {
     case 259: // KEY_UP (FTXUI equivalent)
-#ifndef USE_FTXUI_RENDERER
-    case KEY_UP:
-#endif
         shell_selector.navigate_up();
         // Update status message with current selection
         {
@@ -370,9 +363,6 @@ bool MarkdownSlideRenderer::handle_shell_selection_input(int ch)
         return true;
 
     case 258: // KEY_DOWN (FTXUI equivalent)
-#ifndef USE_FTXUI_RENDERER
-    case KEY_DOWN:
-#endif
         shell_selector.navigate_down();
         // Update status message with current selection
         {
