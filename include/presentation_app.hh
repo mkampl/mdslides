@@ -28,6 +28,24 @@ private:
         SHELL_EXECUTION,
         SHELL_POPUP
     };
+
+    struct ThemeColors {
+        ftxui::Color header_color;
+        ftxui::Color text_color;
+        ftxui::Color h1_color;
+        ftxui::Color h2_color;
+        ftxui::Color h3_color;
+        ftxui::Color code_color;
+        ftxui::Color shell_color;
+        ftxui::Color separator_color;
+        ftxui::Color footer_color;
+        ftxui::Color progress_color;
+        ftxui::Color background_color;
+    };
+    
+    ThemeColors current_colors_;
+    
+    void update_theme_colors();
     
     struct PresentationState {
         SlideCollection slides;
