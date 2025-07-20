@@ -317,76 +317,117 @@ Element PresentationApp::render_main_view() {
 Element PresentationApp::render_help_view() {
     std::vector<Element> help_content = {
         text(""),
-        text("MARKDOWN SLIDE PRESENTER - HELP") | bold | center | color(Color::Cyan),
+        text("MARKDOWN SLIDE PRESENTER - HELP") | bold | center | color(current_colors_.header_color),
         text(""),
         separator(),
         text(""),
-        text("Navigation:") | bold | color(Color::Green),
-        text("  → / Space / l    Next slide"),
-        text("  ← / Backspace    Previous slide"),
-        text("  g                Go to specific slide"),
-        text("  0                First slide"),
-        text("  $                Last slide"),
-        text("  ENTER            Execute shell commands"),
+        text("Navigation:") | bold | color(current_colors_.h1_color),
+        text("  → / Space / l    Next slide")| color(current_colors_.text_color),
+        text("  ← / Backspace    Previous slide") | color(current_colors_.text_color),
+        text("  g                Go to specific slide") | color(current_colors_.text_color),
+        text("  0                First slide") | color(current_colors_.text_color),
+        text("  $                Last slide") | color(current_colors_.text_color),
+        text("  ENTER            Execute shell commands") | color(current_colors_.text_color),
         text(""),
-        text("Display:") | bold | color(Color::Green),
-        text("  t                Cycle themes"),
-        text("  a                Toggle animations"),
-        text("  T                Toggle timer"),
-        text("  r                Refresh/redraw"),
+        text("Display:") | bold | color(current_colors_.h1_color),
+        text("  t                Cycle themes") | color(current_colors_.text_color),
+        text("  a                Toggle animations") | color(current_colors_.text_color),
+        text("  T                Toggle timer") | color(current_colors_.text_color),
+        text("  r                Refresh/redraw") | color(current_colors_.text_color),
         text(""),
-        text("Other:") | bold | color(Color::Green),
-        text("  h / ?            Show this help"),
-        text("  q / Escape       Quit"),
+        text("Other:") | bold | color(current_colors_.h1_color),
+        text("  h / ?            Show this help") | color(current_colors_.text_color),
+        text("  q / Escape       Quit") | color(current_colors_.text_color),
         text(""),
         separator(),
         text(""),
-        text("Press any key to continue...") | bold | center | color(Color::Yellow)
+        text("Press any key to continue...") | bold | center | color(current_colors_.footer_color)
     };
     
-    return vbox(help_content) | border | center | 
-           size(WIDTH, LESS_THAN, 80) | size(HEIGHT, LESS_THAN, 25);
+    // Erstelle Popup-Fenster
+    Element popup = vbox(help_content) | 
+                   border | 
+                   bgcolor(current_colors_.background_color) |  // Fester Hintergrund
+                   size(WIDTH, LESS_THAN, 80) | 
+                   size(HEIGHT, LESS_THAN, 25);
+    
+    // Kombiniere mit aktuellem Slide im Hintergrund
+    Element background = render_main_view();  // Aktuelle Präsentation
+
+    Element popup_layer = vbox({
+        filler(),
+        hbox({
+            filler(),
+            popup,
+            filler()
+        }),
+        filler()
+    });
+    
+    // Overlay-Effekt: Background + zentriertes Popup
+    return dbox({
+        background, 
+        popup_layer
+    });
 }
 
 Element PresentationApp::render_goto_dialog() {
-    return vbox({
-        filler(),
+    Element popup = vbox({
+        text("Go to slide") | bold | center,
+        text(""),
+        hbox({
+            text("Enter slide number (1-" + std::to_string(state_.slides.get_slide_count()) + "): "),
+            text(state_.goto_input + "_") | bold | color(Color::Cyan)
+        }) | center,
+        text(""),
+        text("Press Enter to confirm, Escape to cancel") | center
+    }) | border | bgcolor(Color::Black) | center | 
+         size(WIDTH, EQUAL, 50) | size(HEIGHT, EQUAL, 8);
+    
+    // Background mit aktuellem Slide
+    Element background = render_main_view();
+    
+    return dbox({
+        background,
         vbox({
-            text("Go to slide") | bold | center,
-            text(""),
-            hbox({
-                text("Enter slide number (1-" + std::to_string(state_.slides.get_slide_count()) + "): "),
-                text(state_.goto_input + "_") | bold | color(Color::Cyan)
-            }) | center,
-            text(""),
-            text("Press Enter to confirm, Escape to cancel") | center
-        }) | border | center | size(WIDTH, EQUAL, 50) | size(HEIGHT, EQUAL, 8),
-        filler()
+            filler(),
+            popup,
+            filler()
+        })
     });
 }
 
 Element PresentationApp::render_shell_confirmation() {
-    return vbox({
-        filler(),
+    Element popup = vbox({
+        text("Execute Shell Command?") | bold | center | color(Color::Yellow),
+        text(""),
+        hbox({
+            text("Command: "),
+            text(state_.pending_shell_command) | color(Color::Cyan) | bold
+        }) | center,
+        text(""),
+        hbox({
+            text("Press "),
+            text("Y") | bold | color(Color::Green),
+            text(" to execute or "),
+            text("N") | bold | color(Color::Red),
+            text(" to cancel")
+        }) | center,
+        text(""),
+        text("ESC also cancels") | center
+    }) | border | bgcolor(Color::Black) | center | 
+         size(WIDTH, EQUAL, 60) | size(HEIGHT, EQUAL, 10);
+    
+    // Background mit aktuellem Slide
+    Element background = render_main_view();
+    
+    return dbox({
+        background,
         vbox({
-            text("Execute Shell Command?") | bold | center | color(Color::Yellow),
-            text(""),
-            hbox({
-                text("Command: "),
-                text(state_.pending_shell_command) | color(Color::Cyan) | bold
-            }) | center,
-            text(""),
-            hbox({
-                text("Press "),
-                text("Y") | bold | color(Color::Green),
-                text(" to execute or "),
-                text("N") | bold | color(Color::Red),
-                text(" to cancel")
-            }) | center,
-            text(""),
-            text("ESC also cancels") | center
-        }) | border | center | size(WIDTH, EQUAL, 60) | size(HEIGHT, EQUAL, 10),
-        filler()
+            filler(),
+            popup,
+            filler()
+        })
     });
 }
 
@@ -647,6 +688,10 @@ void PresentationApp::execute_shell_command(const std::string& command) {
     
     // Create a new popup with current screen size
     shell_popup_ = std::make_unique<ShellPopup>(width, height);
+    // Background-Provider setzen
+    shell_popup_->set_background_provider([this]() {
+        return render_main_view();  // Aktuelle Präsentation als Background
+    });
     
     // Show the popup (this will block until user closes it)
     shell_popup_->show(command);

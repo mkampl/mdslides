@@ -152,6 +152,10 @@ void ShellPopup::show_ftxui_popup()
     }
 }
 
+void ShellPopup::set_background_provider(std::function<ftxui::Element()> provider){
+    background_provider_ = provider;
+}
+
 ftxui::Element ShellPopup::render_popup_content(bool execution_complete)
 {
     using namespace ftxui;
@@ -252,21 +256,43 @@ ftxui::Element ShellPopup::render_popup_content(bool execution_complete)
         content.push_back(text("ESC: Close (will terminate command)") | center | color(Color::Red));
     }
 
-    // Create the popup window
-    Element popup = vbox(content) |
-                    border |
-                    size(WIDTH, EQUAL, popup_width) |
-                    size(HEIGHT, EQUAL, popup_height) |
-                    center |
-                    bgcolor(Color::Black);
-
-    // Create background overlay
-    return vbox({filler(),
-                 hbox({filler(),
-                       popup,
-                       filler()}),
-                 filler()}) |
-           bgcolor(Color::GrayDark); // Semi-transparent background effect
+    Element popup = vbox(content) | 
+                   border | 
+                   bgcolor(Color::Black) |
+                   size(WIDTH, EQUAL, popup_width) | 
+                   size(HEIGHT, EQUAL, popup_height);
+    
+    if (background_provider_) {
+        Element background = background_provider_();
+        
+        // Erstelle Popup-Layer mit transparenten Bereichen
+        Element popup_layer = vbox({
+            filler(),
+            hbox({
+                filler(),
+                popup,  // Popup OHNE dim
+                filler()
+            }),
+            filler()
+        });
+        
+        // Kombiniere: Gedimmter Background + heller Popup
+        return dbox({
+            background,
+            popup_layer
+        });
+    }
+    
+    // Fallback
+    return vbox({
+        filler(),
+        hbox({
+            filler(),
+            popup,
+            filler()
+        }),
+        filler()
+    }) | bgcolor(Color::GrayDark);
 }
 
 #endif

@@ -19,6 +19,9 @@ public:
     void set_renderer(ISlideRenderer* renderer);
     void show(const std::string& command);
     bool get_is_running(){return is_running;};
+    #ifdef USE_FTXUI_RENDERER
+    void set_background_provider(std::function<ftxui::Element()> provider);
+    #endif
 
 private:
     ISlideRenderer* renderer;
@@ -34,6 +37,7 @@ private:
     
 #ifdef USE_FTXUI_RENDERER
     bool command_executed = false;
+    std::function<ftxui::Element()> background_provider_;
     
     void show_ftxui_popup();
     ftxui::Element render_popup_content(bool execution_complete);
