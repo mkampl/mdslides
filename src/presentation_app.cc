@@ -21,6 +21,7 @@ PresentationApp::PresentationApp() {
     shell_popup_ = std::make_unique<ShellPopup>(80, 24);
     setup_components();
     update_theme();
+    update_theme_colors();
 }
 
 PresentationApp::~PresentationApp() = default;
@@ -92,7 +93,7 @@ void PresentationApp::run() {
     cleanup_terminal();
 }
 
-bool PresentationApp::handle_shell_popup_event(Event event) {
+bool PresentationApp::handle_shell_popup_event(Event  /* event */) {
     // The shell popup handles its own events, but you might want to 
     // check if it's still running and transition back to main view
     if (!shell_popup_ || !shell_popup_->get_is_running()) {
@@ -298,9 +299,9 @@ bool PresentationApp::handle_shell_confirmation_event(Event event) {
 Element PresentationApp::render_main_view() {
     std::vector<Element> layout = {
         render_header(),
-        separator(),
+        separator() | color(current_colors_.separator_color),  // Use theme color
         render_slide_content() | flex,
-        separator(),
+        separator() | color(current_colors_.separator_color),  // Use theme color
         render_progress_bar(),
         render_footer()
     };
@@ -309,7 +310,7 @@ Element PresentationApp::render_main_view() {
         layout.insert(layout.end() - 1, text(state_.status_message) | color(Color::Yellow) | center);
     }
     
-    return vbox(layout);
+    return vbox(layout) | bgcolor(current_colors_.background_color);  // Use theme background
 }
 
 Element PresentationApp::render_help_view() {
@@ -444,52 +445,31 @@ Element PresentationApp::render_slide_element(const SlideElement& element) {
     
     switch (element.type) {
         case ElementType::HEADER1:
-            content = content | bold | color(Color::Cyan) | center;
+            content = content | bold | color(current_colors_.h1_color) | center;
             break;
         case ElementType::HEADER2:
-            content = content | bold | color(Color::Green) | underlined;
+            content = content | bold | color(current_colors_.h2_color) | underlined;
             break;
         case ElementType::HEADER3:
-            content = content | bold | color(Color::White) | italic;
+            content = content | bold | color(current_colors_.h3_color) | italic;
             break;
         case ElementType::CODE_BLOCK:
-            content = content | color(Color::Magenta);
+            content = content | color(current_colors_.code_color);
             break;
         case ElementType::SHELL_COMMAND:
-            content = content | color(Color::Magenta) | bold;
+            content = content | color(current_colors_.shell_color) | bold;
             break;
         case ElementType::BULLET:
         case ElementType::NUMBERED:
         case ElementType::TEXT:
-            content = content | color(Color::White);
+            content = content | color(current_colors_.text_color);
             if (element.is_bold) {
                 content = content | bold;
             }
             break;
         default:
-            content = content | color(Color::White);
+            content = content | color(current_colors_.text_color);
             break;
-    }
-    
-    return content;
-}
-
-Element PresentationApp::render_shell_element_with_selection(const SlideElement& element, int element_index) {
-    Element content = text(element.content);
-    content = content | color(Color::Magenta) | bold;
-    
-    // Check if this shell command is selected
-    if (state_.shell_selection_active && state_.get_selected_shell_index() == element_index) {
-        // Highlight selected command
-        content = content | bgcolor(Color::Blue) | color(Color::White);
-        
-        // Add selection indicators
-        Element selection_indicator = hbox({
-            text("→ ") | color(Color::Yellow) | bold,
-            content,
-            text(" ←") | color(Color::Yellow) | bold
-        });
-        return selection_indicator;
     }
     
     return content;
@@ -519,12 +499,12 @@ Element PresentationApp::render_header() {
         header_elements[0],
         filler(),
         hbox(Elements(header_elements.begin() + 1, header_elements.end())) | center
-    }) | color(Color::Cyan);
+    }) | color(current_colors_.header_color);  // Use theme color
 }
 
 Element PresentationApp::render_footer() {
     std::string controls = "Controls: ←/→ Navigate | ENTER Execute | t Theme | h Help | g Goto | q Quit";
-    return text(controls) | center | color(Color::White);
+    return text(controls) | center | color(current_colors_.footer_color);  // Use theme color
 }
 
 Element PresentationApp::render_progress_bar() {
@@ -541,7 +521,102 @@ Element PresentationApp::render_progress_bar() {
     }
     progress_text += "]";
     
-    return text(progress_text) | center | color(Color::Green);
+    return text(progress_text) | center | color(current_colors_.progress_color);  // Use theme color
+}
+
+Element PresentationApp::render_shell_element_with_selection(const SlideElement& element, int element_index) {
+    Element content = text(element.content);
+    content = content | color(Color::Magenta) | bold;
+    
+    // Check if this shell command is selected
+    if (state_.shell_selection_active && state_.get_selected_shell_index() == element_index) {
+        // Highlight selected command
+        content = content | bgcolor(Color::Blue) | color(Color::White);
+        
+        // Add selection indicators
+        Element selection_indicator = hbox({
+            text("→ ") | color(Color::Yellow) | bold,
+            content,
+            text(" ←") | color(Color::Yellow) | bold
+        });
+        return selection_indicator;
+    }
+    
+    return content;
+}
+
+
+void PresentationApp::update_theme_colors() {
+    using namespace ftxui;
+
+    auto orange = Color::RGB(255, 165, 0);  // truecolor
+  // auto orange = Color::Indexed(208);  // uncomment this for 256-color fallback
+    
+    switch (state_.current_theme) {
+        case Theme::DARK:
+            current_colors_ = {
+                .header_color = Color::Cyan,
+                .text_color = Color::White,
+                .h1_color = Color::Cyan,
+                .h2_color = Color::Green,
+                .h3_color = Color::White,
+                .code_color = Color::Magenta,
+                .shell_color = Color::Magenta,
+                .separator_color = Color::GrayDark,
+                .footer_color = Color::White,
+                .progress_color = Color::Green,
+                .background_color = Color::Black
+            };
+            break;
+            
+        case Theme::LIGHT:
+            current_colors_ = {
+                .header_color = Color::Blue,
+                .text_color = Color::Black,
+                .h1_color = Color::Blue,
+                .h2_color = Color::DarkGreen,
+                .h3_color = Color::GrayDark,
+                .code_color = Color::Purple,
+                .shell_color = Color::Purple,
+                .separator_color = Color::GrayLight,
+                .footer_color = Color::GrayDark,
+                .progress_color = Color::DarkGreen,
+                .background_color = Color::White
+            };
+            break;
+            
+        case Theme::MATRIX:
+            current_colors_ = {
+                .header_color = Color::GreenLight,
+                .text_color = Color::Green,
+                .h1_color = Color::GreenLight,
+                .h2_color = Color::Green,
+                .h3_color = Color::GreenLight,
+                .code_color = Color::GreenLight,
+                .shell_color = Color::GreenLight,
+                .separator_color = Color::Green,
+                .footer_color = Color::Green,
+                .progress_color = Color::GreenLight,
+                .background_color = Color::Black
+            };
+            break;
+            
+        case Theme::RETRO:
+            current_colors_ = {
+                .header_color = Color::Yellow,
+                .text_color = orange,
+                .h1_color = Color::Yellow,
+                .h2_color = orange,
+                .h3_color = Color::Red,
+                .code_color = Color::Cyan,
+                .shell_color = Color::Cyan,
+                .separator_color = Color::Red,
+                .footer_color = orange,
+                .progress_color = Color::Yellow,
+                .background_color = Color::Black
+            };
+            break;
+    }
 }
 
 void PresentationApp::execute_shell_command(const std::string& command) {
@@ -591,6 +666,7 @@ std::string PresentationApp::run_shell_command(const std::string& command) {
 
 void PresentationApp::update_theme() {
     theme_manager_.setup_theme(state_.current_theme);
+    update_theme_colors();
 }
 
 void PresentationApp::cleanup_terminal() {
@@ -626,7 +702,7 @@ Element PresentationApp::apply_animation_effect(Element element, const SlideElem
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - state_.slide_start_time);
     
     // TIMING CONFIGURATION
-    const int TYPEWRITER_DURATION = 1200;   // ms for typewriter animation
+    // const int TYPEWRITER_DURATION = 1200;   // ms for typewriter animation
     const int SLIDE_DURATION = 600;         // ms for slide-in animation  
     const int FADE_DURATION = 400;          // ms for fade animation
     const int TYPEWRITER_CHAR_DELAY = 40;   // ms per character in typewriter
