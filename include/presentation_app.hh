@@ -3,6 +3,7 @@
 
 #include "slide_element.hh"
 #include "theme_config.hh"
+#include "shell_popup.hh"
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/dom/elements.hpp>
@@ -24,7 +25,8 @@ private:
         MAIN_VIEW,
         HELP_VIEW,
         GOTO_DIALOG,
-        SHELL_EXECUTION
+        SHELL_EXECUTION,
+        SHELL_POPUP
     };
     
     struct PresentationState {
@@ -256,6 +258,7 @@ private:
     
     PresentationState state_;
     ThemeManager theme_manager_;
+    std::unique_ptr<ShellPopup> shell_popup_;
     
     // FTXUI components
     ftxui::Component main_component_;
@@ -265,6 +268,7 @@ private:
     bool handle_help_view_event(ftxui::Event event);
     bool handle_goto_dialog_event(ftxui::Event event);
     bool handle_shell_confirmation_event(ftxui::Event event);
+    bool handle_shell_popup_event(ftxui::Event event);
     
     // UI rendering
     ftxui::Element render_main_view();
