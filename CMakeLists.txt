@@ -30,9 +30,7 @@ set(SOURCES
     src/shell_command_selector.cc
     src/shell_popup.cc
     src/slide_element.cc
-    src/slide_renderer.cc
     src/theme_config.cc
-    src/presentation_app.cc
     ${RENDERER_SOURCES}
 )
 
