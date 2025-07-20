@@ -171,6 +171,7 @@ bool PresentationApp::handle_main_view_event(Event event) {
                 
             case 't':
                 state_.cycle_theme();
+                theme_manager_.cycle_theme();
                 update_theme();
                 state_.status_message = "Theme changed";
                 return true;
@@ -551,6 +552,22 @@ void PresentationApp::update_theme_colors() {
 
     auto orange = Color::RGB(255, 165, 0);  // truecolor
   // auto orange = Color::Indexed(208);  // uncomment this for 256-color fallback
+
+//   auto theme = theme_manager_.get_current_theme();
+//   const auto &theme_config = theme_manager_.get_current_theme_config();
+//   current_colors_ = {
+//     .header_color = theme_config.title_color,
+//     .text_color = theme_config.text_color,
+//     .h1_color = theme_config.title_color,
+//     .h2_color = theme_config.title_color,
+//     .h3_color = theme_config.title_color,
+//     .code_color = theme_config.code_color,
+//     .shell_color = theme_config.code_color,
+//     .separator_color = theme_config.accent_color,
+//     .footer_color = theme_config.accent_color,
+//     .progress_color = theme_config.accent_color,
+//     .background_color = theme_config.bg_color
+// };
     
     switch (state_.current_theme) {
         case Theme::DARK:

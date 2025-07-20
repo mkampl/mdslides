@@ -14,9 +14,7 @@
 #include <thread>
 #include <atomic>
 #include <chrono>
-#endif
-
-#ifndef USE_FTXUI_RENDERER
+#else
 #include <ncurses.h>
 #endif
 
@@ -39,7 +37,7 @@ void ShellPopup::set_renderer(ISlideRenderer *r)
 void ShellPopup::show(const std::string &cmd)
 {
     command = cmd;
-    
+
 #ifdef USE_FTXUI_RENDERER
     show_ftxui_popup();
 #else
@@ -55,18 +53,19 @@ void ShellPopup::show(const std::string &cmd)
 void ShellPopup::show_ftxui_popup()
 {
     using namespace ftxui;
-    
+
     // Reset state
     output_lines.clear();
     scroll_offset = 0;
     is_running = true;
     command_executed = false;
-    
+
     auto screen = ScreenInteractive::Fullscreen();
-    
+
     // Execute command in background thread
     std::atomic<bool> execution_complete{false};
-    std::thread execution_thread([&]() {
+    std::thread execution_thread([&]()
+                                 {
         std::string output = execute_shell_command(command);
         
         // Split into lines and handle line wrapping
@@ -95,16 +94,15 @@ void ShellPopup::show_ftxui_popup()
         execution_complete = true;
         
         // Force screen refresh
-        screen.PostEvent(Event::Custom);
-    });
-    
+        screen.PostEvent(Event::Custom); });
+
     // Create the popup component
-    auto popup_component = Renderer([&] {
-        return render_popup_content(execution_complete.load());
-    });
-    
+    auto popup_component = Renderer([&]
+                                    { return render_popup_content(execution_complete.load()); });
+
     // Handle input events
-    popup_component = CatchEvent(popup_component, [&](Event event) {
+    popup_component = CatchEvent(popup_component, [&](Event event)
+                                 {
         if (event == Event::Escape || (event.is_character() && (event.character()[0] == 'q' || event.character()[0] == 'Q'))) {
             is_running = false;
             screen.ExitLoopClosure()();
@@ -142,14 +140,14 @@ void ShellPopup::show_ftxui_popup()
             return true;
         }
         
-        return false;
-    });
-    
+        return false; });
+
     // Start the popup loop
     screen.Loop(popup_component);
-    
+
     // Cleanup
-    if (execution_thread.joinable()) {
+    if (execution_thread.joinable())
+    {
         execution_thread.join();
     }
 }
@@ -157,106 +155,118 @@ void ShellPopup::show_ftxui_popup()
 ftxui::Element ShellPopup::render_popup_content(bool execution_complete)
 {
     using namespace ftxui;
-    
+
     std::vector<Element> content;
-    
+
     // Title
     content.push_back(text("Shell Command Execution") | bold | center | color(Color::Cyan));
     content.push_back(separator());
-    
+
     // Command display
     std::string display_cmd = "$ " + command;
-    if (static_cast<int>(display_cmd.length()) > popup_width - 4) {
+    if (static_cast<int>(display_cmd.length()) > popup_width - 4)
+    {
         display_cmd = display_cmd.substr(0, popup_width - 7) + "...";
     }
     content.push_back(text(display_cmd) | bold | color(Color::Yellow));
     content.push_back(separator());
-    
-    if (!execution_complete) {
+
+    if (!execution_complete)
+    {
         // Show execution in progress
         content.push_back(text(""));
         content.push_back(text("Executing...") | bold | color(Color::Green) | center);
         content.push_back(text(""));
-        
+
         // Add some animated dots
         auto now = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
         int dots = (elapsed.count() / 300) % 4; // Change every 300ms
         std::string dot_animation = std::string(dots, '.');
         content.push_back(text(dot_animation) | center | color(Color::Green));
-        
-    } else {
+    }
+    else
+    {
         // Show output
         std::vector<Element> output_content;
-        
+
         int display_lines = popup_height - 8; // Reserve space for header, footer, borders
         int start_line = scroll_offset;
         int end_line = std::min(start_line + display_lines, static_cast<int>(output_lines.size()));
-        
+
         // Add output lines
-        for (int i = start_line; i < end_line; ++i) {
+        for (int i = start_line; i < end_line; ++i)
+        {
             output_content.push_back(text(output_lines[i]) | color(Color::White));
         }
-        
+
         // Fill remaining space if needed
-        while (static_cast<int>(output_content.size()) < display_lines) {
+        while (static_cast<int>(output_content.size()) < display_lines)
+        {
             output_content.push_back(text(""));
         }
-        
+
         content.push_back(vbox(output_content) | flex);
-        
+
         // Add scroll indicator if needed
-        if (static_cast<int>(output_lines.size()) > display_lines) {
+        if (static_cast<int>(output_lines.size()) > display_lines)
+        {
             std::string scroll_info = "Lines " + std::to_string(start_line + 1) +
-                                     "-" + std::to_string(end_line) +
-                                     " of " + std::to_string(output_lines.size());
-            
+                                      "-" + std::to_string(end_line) +
+                                      " of " + std::to_string(output_lines.size());
+
             Elements scroll_indicators;
-            if (start_line > 0) {
+            if (start_line > 0)
+            {
                 scroll_indicators.push_back(text("↑") | color(Color::Yellow));
-            } else {
+            }
+            else
+            {
                 scroll_indicators.push_back(text(" "));
             }
-            
+
             scroll_indicators.push_back(text(scroll_info) | center);
-            
-            if (end_line < static_cast<int>(output_lines.size())) {
+
+            if (end_line < static_cast<int>(output_lines.size()))
+            {
                 scroll_indicators.push_back(text("↓") | color(Color::Yellow));
-            } else {
+            }
+            else
+            {
                 scroll_indicators.push_back(text(" "));
             }
-            
+
             content.push_back(separator());
             content.push_back(hbox(scroll_indicators) | center);
         }
     }
-    
+
     // Footer with controls
     content.push_back(separator());
-    if (execution_complete) {
+    if (execution_complete)
+    {
         content.push_back(text("ESC: Close | ↑↓: Scroll | PgUp/PgDn: Page | Home/End: Jump") | center | color(Color::Cyan));
-    } else {
+    }
+    else
+    {
         content.push_back(text("ESC: Close (will terminate command)") | center | color(Color::Red));
     }
-    
+
     // Create the popup window
-    Element popup = vbox(content) | 
-                   border | 
-                   size(WIDTH, EQUAL, popup_width) | 
-                   size(HEIGHT, EQUAL, popup_height) |
-                   center |
-                   bgcolor(Color::Black);
-    
+    Element popup = vbox(content) |
+                    border |
+                    size(WIDTH, EQUAL, popup_width) |
+                    size(HEIGHT, EQUAL, popup_height) |
+                    center |
+                    bgcolor(Color::Black);
+
     // Create background overlay
-    return vbox({
-        filler(),
-        hbox({
-            filler(),
-            popup,
-            filler()
-        }),
-        filler()
-    }) | bgcolor(Color::GrayDark); // Semi-transparent background effect
+    return vbox({filler(),
+                 hbox({filler(),
+                       popup,
+                       filler()}),
+                 filler()}) |
+           bgcolor(Color::GrayDark); // Semi-transparent background effect
 }
 
 #endif

@@ -1,5 +1,9 @@
-#include "slide_renderer.hh"
+
+#ifdef USE_FTXUI_RENDERER
 #include "presentation_app.hh"
+#else
+#include "slide_renderer.hh"
+#endif
 #include <cstdio>
 
 int main(int argc, char *argv[])

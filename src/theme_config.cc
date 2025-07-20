@@ -17,7 +17,7 @@ ThemeManager::ThemeManager() : current_theme(Theme::DARK)
 void ThemeManager::setup_theme(Theme theme)
 {
     current_theme = theme;
-    
+
 #ifndef USE_FTXUI_RENDERER
     // Only call ncurses functions when using ncurses renderer
     const auto &theme_config = themes[static_cast<int>(theme)];
@@ -49,6 +49,10 @@ void ThemeManager::cycle_theme()
 Theme ThemeManager::get_current_theme() const
 {
     return current_theme;
+}
+ThemeConfig ThemeManager::get_current_theme_config() const
+{
+    static_cast<Theme>(static_cast<int>(current_theme));
 }
 
 const char *ThemeManager::get_current_theme_name() const

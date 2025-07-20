@@ -1,5 +1,7 @@
 #include "markdown_parser.hh"
+#ifndef USE_FTXUI_RENDERER
 #include <ncurses.h>
+#endif
 #include <fstream>
 #include <sstream>
 #include <regex>
