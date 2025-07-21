@@ -125,10 +125,9 @@ function(find_cmark_gfm_dependency)
     
     # Fallback zu vcpkg
     find_package(cmark-gfm CONFIG QUIET)
-    find_package(cmark-gfm-extensions CONFIG QUIET)
     
-    if(cmark-gfm_FOUND AND cmark-gfm-extensions_FOUND)
-        set(CMARK_GFM_LIBS libcmark-gfm_static libcmark-gfm-extensions_static PARENT_SCOPE)
+    if(cmark-gfm_FOUND)
+        set(CMARK_GFM_LIBS libcmark-gfm_static PARENT_SCOPE)
         set(CMARK_GFM_INCLUDE_DIRS "" PARENT_SCOPE)
         set(CMARK_GFM_COMPILE_FLAGS "" PARENT_SCOPE)
         set(CMARK_GFM_FOUND TRUE PARENT_SCOPE)
