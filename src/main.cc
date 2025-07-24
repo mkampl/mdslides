@@ -34,15 +34,9 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-#ifdef USE_FTXUI_RENDERER
     PresentationApp app;
     app.load_slides(argv[1]);
     app.run(); // This runs the FTXUI event loop
-#else
-    MarkdownSlideRenderer renderer;
-    renderer.load_slides(argv[1]);
-    renderer.run();
-#endif
 
     return 0;
 }

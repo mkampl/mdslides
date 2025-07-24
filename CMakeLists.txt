@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Options
-option(USE_FTXUI "Use FTXUI instead of ncurses" OFF)
+# option(USE_FTXUI "Use FTXUI instead of ncurses" ON)
 
 # Find all dependencies
 include(cmake/FindAllDependencies.cmake)
