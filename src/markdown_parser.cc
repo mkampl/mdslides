@@ -1,7 +1,4 @@
 #include "markdown_parser.hh"
-#ifndef USE_FTXUI_RENDERER
-#include <ncurses.h>
-#endif
 #include <fstream>
 #include <sstream>
 #include <regex>
@@ -86,13 +83,6 @@ private:
 
         // Get screen width in a portable way
         int screen_width = 80; // Default fallback
-#ifndef USE_FTXUI_RENDERER
-        // Only use COLS when ncurses is available
-        if (COLS > 0)
-        {
-            screen_width = COLS;
-        }
-#endif
 
         switch (level)
         {
