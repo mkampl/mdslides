@@ -29,20 +29,26 @@ A terminal-based presentation tool that renders markdown files as interactive sl
 ### Prerequisites
 - CMake 3.15 or higher
 - C++17 compatible compiler
-- ncurses library
-- cmark-gfm library
+- vcpkg package manager
 
 ### Linux (Ubuntu/Debian)
 ```bash
-# Install dependencies
+# Install basic build tools
 sudo apt update
-sudo apt install -y cmake build-essential libncurses-dev libcmark-gfm-dev
+sudo apt install -y cmake build-essential git curl zip unzip tar
 
-# Clone and build
+# Install vcpkg
+git clone https://github.com/Microsoft/vcpkg.git
+cd vcpkg
+./bootstrap-vcpkg.sh
+export VCPKG_ROOT=$(pwd)
+
+# Clone and build the project
+cd ..
 git clone git@github.com:mkampl/mdslides.git
 cd mdslides
 mkdir build && cd build
-cmake ..
+cmake .. -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake
 make
 
 # Install (optional)
@@ -57,7 +63,7 @@ sudo make install
 ```bash
 # Universal build steps
 mkdir build && cd build
-cmake ..
+cmake .. -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake
 make
 
 # Test the build
@@ -183,7 +189,6 @@ Commands are executed in a popup window when you press Enter. For slides with mu
 ## Platform-Specific Notes
 
 ### Linux
-- Requires ncurses development headers
 - UTF-8 support in most modern terminals
 - Works in most terminal emulators
 
@@ -197,7 +202,6 @@ markdown-slide-presenter/
 ├── src/
 │   ├── main.cc                    # Main application entry point
 │   ├── slide_renderer.cc          # Main slide rendering logic
-│   ├── ncurses_renderer.cc        # NCurses-based terminal rendering
 │   ├── markdown_parser.cc         # Markdown parsing with cmark-gfm
 │   ├── slide_element.cc           # Slide element data structures
 │   ├── theme_config.cc            # Theme configuration
@@ -205,7 +209,6 @@ markdown-slide-presenter/
 │   └── shell_popup.cc             # Shell command popup window
 ├── include/
 │   ├── slide_renderer.hh          # Main renderer interface
-│   ├── ncurses_renderer.hh        # NCurses renderer header
 │   ├── markdown_parser.hh         # Markdown parser header
 │   ├── slide_element.hh           # Slide element definitions
 │   ├── theme_config.hh            # Theme configuration header
@@ -218,15 +221,12 @@ markdown-slide-presenter/
 
 ## Dependencies
 
-## Dependencies
-
 This project uses the following third-party libraries:
 
 - **[FTXUI](https://github.com/ArthurSonzogni/FTXUI)** - C++ Functional Terminal User Interface library (MIT License)
-- **[ncurses](https://invisible-island.net/ncurses/)** - Terminal UI library (MIT-style License)
 - **[cmark-gfm](https://github.com/github/cmark-gfm)** - GitHub Flavored Markdown parser (BSD-2-Clause License)
 
-
+Dependencies are managed through vcpkg for consistent cross-platform builds.
 
 ---
 
