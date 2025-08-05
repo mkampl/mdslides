@@ -1,5 +1,4 @@
 #include "markdown_parser.hh"
-#include <ncurses.h>
 #include <fstream>
 #include <sstream>
 #include <regex>
@@ -82,12 +81,15 @@ private:
 
         current_y++; // spacing
 
+        // Get screen width in a portable way
+        int screen_width = 80; // Default fallback
+
         switch (level)
         {
         case 1:
             element.color_pair = 1;
             element.type = ElementType::HEADER1;
-            element.x = std::max((COLS - (int)content.length()) / 2, 2);
+            element.x = std::max((screen_width - (int)content.length()) / 2, 2);
             break;
         case 2:
             element.color_pair = 2;

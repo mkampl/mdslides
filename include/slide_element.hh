@@ -26,6 +26,7 @@ enum class ElementType
 struct SlideElement
 {
     std::string content;
+    std::string original_content;
     int y, x;
     int color_pair;
     bool is_bold = false;

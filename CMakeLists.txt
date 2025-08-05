@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Options
-option(USE_FTXUI "Use FTXUI instead of ncurses" OFF)
+# option(USE_FTXUI "Use FTXUI instead of ncurses" ON)
 
 # Find all dependencies
 include(cmake/FindAllDependencies.cmake)
@@ -27,11 +27,8 @@ endif()
 set(SOURCES
     src/main.cc
     src/markdown_parser.cc
-    src/ncurses_renderer.cc
-    src/shell_command_selector.cc
+    src/slide_element.cc 
     src/shell_popup.cc
-    src/slide_element.cc
-    src/slide_renderer.cc
     src/theme_config.cc
     ${RENDERER_SOURCES}
 )

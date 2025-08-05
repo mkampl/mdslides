@@ -1,29 +1,41 @@
 #pragma once
 
-#include "slide_element.hh"
-#include <vector>
 #include <string>
+#include <vector>
+
+#include <ftxui/dom/elements.hpp>
+#include <atomic>
+
+// Forward declaration
+class ISlideRenderer;
 
 class ShellPopup
 {
-private:
-    int popup_width, popup_height;
-    int popup_x, popup_y;
-    int scroll_offset;
-    std::vector<std::string> output_lines;
-    std::string command;
-    bool is_running;
-
 public:
     ShellPopup(int screen_width, int screen_height);
-
-    void show(const std::string &cmd);
+    
+    void set_renderer(ISlideRenderer* renderer);
+    void show(const std::string& command);
+    bool get_is_running(){return is_running;};
+    void set_background_provider(std::function<ftxui::Element()> provider);
 
 private:
-    void draw_popup_frame();
-    void execute_command();
-    void display_output();
-    void handle_input();
-    void clear_popup_area();
-    std::string execute_shell_command(const std::string &command);
+    ISlideRenderer* renderer;
+    std::string command;
+    std::vector<std::string> output_lines;
+    
+    int popup_width;
+    int popup_height;
+    int popup_x;
+    int popup_y;
+    int scroll_offset;
+    bool is_running;
+    
+    bool command_executed = false;
+    std::function<ftxui::Element()> background_provider_;
+    
+    void show_ftxui_popup();
+    ftxui::Element render_popup_content(bool execution_complete);
+
+    std::string execute_shell_command(const std::string& command);
 };

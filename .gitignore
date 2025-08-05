@@ -4,13 +4,16 @@ cmake-build-*/
 
 # Compiled binaries
 slides
+mdslide
 *.exe
 
-# Conan files
+# package files
 conandata.yml
 conaninfo.txt
 conanbuildinfo.*
 conan.lock
+.cache/
+vcpkg/
 
 # CMake generated files
 CMakeCache.txt
