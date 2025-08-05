@@ -6,7 +6,7 @@ if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     set(VCPKG_PATHS
         "$ENV{HOME}/libs/vcpkg/scripts/buildsystems/vcpkg.cmake"
         "$ENV{HOME}/vcpkg/scripts/buildsystems/vcpkg.cmake"
-        "${CMAKE_SOURCE_DIR}/../vcpkg/scripts/buildsystems/vcpkg.cmake"
+        "${CMAKE_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake"
         "/usr/local/vcpkg/scripts/buildsystems/vcpkg.cmake"
         "/opt/vcpkg/scripts/buildsystems/vcpkg.cmake"
     )

@@ -1,4 +1,9 @@
+
+#ifdef USE_FTXUI_RENDERER
+#include "presentation_app.hh"
+#else
 #include "slide_renderer.hh"
+#endif
 #include <cstdio>
 
 int main(int argc, char *argv[])
@@ -29,9 +34,9 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    MarkdownSlideRenderer renderer;
-    renderer.load_slides(argv[1]);
-    renderer.run();
+    PresentationApp app;
+    app.load_slides(argv[1]);
+    app.run(); // This runs the FTXUI event loop
 
     return 0;
 }
